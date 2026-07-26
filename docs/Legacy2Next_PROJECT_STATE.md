@@ -34,19 +34,19 @@ Last Updated: 2026-07-26
 
 # Current Goal
 
-Complete Milestone 4 — Static Analysis by implementing AnalysisWriter and service integration.
+Complete Milestone 4 — Static Analysis by implementing AnalysisWriter.
 
 ---
 
 # Current Task
 
-- AnalysisWriter / persistence (M4.5)
+- AnalysisWriter / persistence (M4.8)
 
 ---
 
 # Current Focus
 
-The current priority is implementing the AnalysisWriter for database persistence and pipeline orchestration.
+The current priority is implementing the AnalysisWriter for database persistence.
 
 ---
 
@@ -185,7 +185,16 @@ Status: In Progress
 - [x] DetectedMetric.value widened from int to int | str
 - [x] 51 tests passing (258 total in test_analysis)
 
-### M4.7 — AnalysisWriter & Pipeline
+### M4.7 — AnalysisPipeline
+
+- [x] pipeline.py (AnalysisPipeline — orchestration only, no detection/aggregation/persistence)
+- [x] types.py: DetectorWarning dataclass added
+- [x] types.py: DetectorResult.warnings field added
+- [x] Constructor injection: engine, detectors, metrics_collector
+- [x] Sequential execution, failure isolation, deterministic output
+- [x] 27 tests passing (285 total in test_analysis)
+
+### M4.8 — AnalysisWriter & Pipeline
 
 - [ ] Pipeline orchestration
 - [ ] AnalysisService integration
@@ -844,16 +853,59 @@ Architecture Decisions
 - Case-insensitive manifest filename matching handles case variations (Gemfile, gemfile)
 - Alphabetical tie-breaking for primary language ensures deterministic output (simpler than confidence-based ordering)
 
+---
+
+## Session 15 — 2026-07-26
+
+Completed
+
+- Implemented AnalysisPipeline (`backend/app/modules/analysis/pipeline.py`) — pure orchestration layer coordinating DiscoveryEngine, detectors, and MetricsCollector
+- Added DetectorWarning frozen dataclass to types.py — structured warnings with detector_name and message fields
+- Added warnings field to DetectorResult — `warnings: tuple[DetectorWarning, ...] = ()`, no existing behaviour changed
+- Pipeline failure isolation: DiscoveryException propagates, detector exceptions are caught and wrapped as error DetectorResults, remaining detectors continue
+- Sequential execution with constructor injection (engine, detectors, metrics_collector) — no service locator, no DI framework
+- Created 27 comprehensive tests across 7 test classes: construction, successful execution (order, metric integration, final results), failure handling (discovery exception, error result continuation, raised exception wrapping, multi-failure, all-fail), warning preservation, timestamps, determinism, pipeline boundary (no logic leakage, no mutation, ID passthrough)
+- Updated ARCHITECTURE.md — AnalysisPipeline section, folder structure, analysis status, next milestones
+- Updated Legacy2Next_PROJECT_STATE.md — M4.7 complete, current goal/focus updated
+- Updated CHANGELOG.md — M4.7B entry
+
+Files Created
+
+- `backend/app/modules/analysis/pipeline.py` — AnalysisPipeline class
+- `backend/tests/test_analysis/test_pipeline.py` — 27 tests
+
+Files Modified
+
+- `backend/app/modules/analysis/types.py` — Added DetectorWarning, DetectorResult.warnings
+- `docs/ARCHITECTURE.md` — Pipeline section, folder structure, status updates
+- `docs/Legacy2Next_PROJECT_STATE.md` — Session 15, M4.7 complete, state updates
+- `docs/CHANGELOG.md` — M4.7B entry
+
+Testing Performed
+
+- 285 tests in test_analysis: 27 new pipeline tests + 258 existing tests, all passing
+
+Architecture Decisions
+
+- AnalysisPipeline is a pure coordinator — no detection, no aggregation, no persistence
+- Constructor injection with explicit types — engine: DiscoveryEngine, detectors: list[BaseDetector], metrics_collector: MetricsCollector
+- DetectorWarning is a structured dataclass (not a string) — enables grouping by detector_name, future severity support, no string parsing
+- DiscoveryException propagates to caller (no analysis without a valid project)
+- All other exceptions caught and wrapped as DetectorResult with error string — never aborts the pipeline
+- MetricsCollector receives an intermediate AnalysisResults built from detector results, then its DetectorResult is appended to the same list
+- Warnings are preserved per-detector on DetectorResult — pipeline does not merge, rewrite, or inspect them
+- Timestamps recorded at start and end of analyze() — no per-detector timing in the pipeline
+
 Next
 
-- AnalysisWriter implementation and pipeline orchestration
+- AnalysisWriter implementation and persistence
 
 # Definition of Current State
 
 The project has reached v0.4.0 with Milestone 4 (Static Analysis) actively in progress.
 
-Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete. Milestone 4 is in progress: M4.1 Infrastructure complete, M4.2 Discovery Engine complete, M4.3 Detector Framework & LanguageDetector complete, M4.4 FrameworkDetector complete, M4.5 DependencyDetector complete, M4.6 MetricsCollector complete. Remaining: M4.7 AnalysisWriter & pipeline orchestration.
+Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete. Milestone 4 is in progress: M4.1 Infrastructure complete, M4.2 Discovery Engine complete, M4.3 Detector Framework & LanguageDetector complete, M4.4 FrameworkDetector complete, M4.5 DependencyDetector complete, M4.6 MetricsCollector complete, M4.7 AnalysisPipeline complete. Remaining: M4.8 AnalysisWriter.
 
-The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), Discovery Engine (os.walk with deterministic sorting, ignore rules, FileGraph), Detector Framework (BaseDetector ABC, LanguageDetector, FrameworkDetector, DependencyDetector), MetricsCollector (pure aggregation from AnalysisResults), and extension→language mapping. The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 tables + 5 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
+The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), Discovery Engine (os.walk with deterministic sorting, ignore rules, FileGraph), Detector Framework (BaseDetector ABC, LanguageDetector, FrameworkDetector, DependencyDetector), MetricsCollector (pure aggregation from AnalysisResults), AnalysisPipeline (orchestration with failure isolation), and extension→language mapping. The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 tables + 5 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
 
-The next session should implement AnalysisWriter and pipeline orchestration.
+The next session should implement AnalysisWriter.

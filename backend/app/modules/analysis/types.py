@@ -36,12 +36,19 @@ class DetectedFile:
 
 
 @dataclass(frozen=True)
+class DetectorWarning:
+    detector_name: str
+    message: str
+
+
+@dataclass(frozen=True)
 class DetectorResult:
     detector_name: str
     technologies: tuple[DetectedTechnology, ...] = ()
     files: tuple[DetectedFile, ...] = ()
     dependencies: tuple[DetectedDependency, ...] = ()
     metrics: tuple[DetectedMetric, ...] = ()
+    warnings: tuple[DetectorWarning, ...] = ()
     error: str | None = None
 
 

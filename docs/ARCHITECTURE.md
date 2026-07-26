@@ -74,7 +74,7 @@ backend/
 │   │   ├── auth/                        # Fully implemented (routes, service, schemas, repository)
 │   │   ├── projects/                    # Fully implemented (routes, service, schemas, repository)
 │   │   ├── uploads/                     # Fully implemented (routes, service, schemas, repository, quota)
-│   │   ├── analysis/                    # Implemented: discovery, ignore_rules, base, types, utils, language_detector, framework_detector, dependency_detector (+ detectors/ subdirectory stubs)
+│   │   ├── analysis/                    # Implemented: discovery, ignore_rules, base, types, utils, language_detector, framework_detector, dependency_detector, metrics_collector, pipeline (+ detectors/ subdirectory stubs)
 │   │   ├── ai/                          # Scaffolded
 │   │   ├── documentation/               # Scaffolded (+ generators/ subdirectory stubs)
 │   │   ├── modernization/               # Scaffolded
@@ -100,7 +100,9 @@ backend/
 │   │   ├── test_discovery.py            # 21 tests (DiscoveryEngine, IgnoreRules, FileGraph)
 │   │   ├── test_detector_framework.py   # 48 tests (BaseDetector, types, utils, LanguageDetector)
 │   │   ├── test_framework_detector.py   # 45 tests (FrameworkDetector, EvidenceRule hierarchy)
-│   │   └── test_dependency_detector.py   # 93 tests (DependencyDetector, 9 parsers, dedup)
+│   │   ├── test_dependency_detector.py   # 93 tests (DependencyDetector, 9 parsers, dedup)
+│   │   ├── test_metrics_collector.py     # 51 tests (MetricsCollector)
+│   │   └── test_pipeline.py              # 27 tests (AnalysisPipeline)
 │   ├── test_ai/                         # Empty __init__.py
 │   ├── test_documentation/              # Empty __init__.py
 │   ├── test_modernization/              # Empty __init__.py
@@ -109,6 +111,26 @@ backend/
 ├── pyproject.toml                       # PEP 621, ruff, mypy config
 ├── Dockerfile                           # python:3.12-slim, pip install ., uvicorn
 └── .env.example                         # All config keys with default values
+```
+
+### AnalysisPipeline — Orchestration Layer
+
+`AnalysisPipeline` coordinates the entire analysis workflow. It is a pure orchestrator — no detection logic, no aggregation logic, no persistence.
+
+```
+AnalysisPipeline
+├── analyze(root_path, upload_id, project_id) → AnalysisResults
+│   ├── 1. DiscoveryEngine.discover()          → DiscoveryContext
+│   ├── 2. LanguageDetector.detect(context)    → DetectorResult
+│   ├── 3. FrameworkDetector.detect(context)   → DetectorResult
+│   ├── 4. DependencyDetector.detect(context)  → DetectorResult
+│   ├── 5. MetricsCollector.collect(results)   → DetectorResult (metrics)
+│   └── 6. Return final AnalysisResults
+├── Constructor injection: engine, detectors, metrics_collector
+├── Sequential execution — no threading, no async
+├── Failure isolation — detector exceptions caught and wrapped
+├── DiscoveryException propagates (no analysis without discovery)
+└── Deterministic — same project → same results, same order
 ```
 
 ### MetricsCollector — Aggregation Stage
@@ -521,7 +543,7 @@ A React + TypeScript + Vite + TailwindCSS application will be initialized in the
 
 | Module | Status |
 |---|---|
-| **Analysis** | In progress. Discovery Engine (FileGraph, IgnoreRules, DiscoveryEngine), Detector Framework (BaseDetector, LanguageDetector, FrameworkDetector, DependencyDetector, extension→language mapping), and MetricsCollector implemented. Routes, service, schemas, repository stubs exist. Remaining: AnalysisWriter and pipeline orchestration. |
+| **Analysis** | In progress. Discovery Engine (FileGraph, IgnoreRules, DiscoveryEngine), Detector Framework (BaseDetector, LanguageDetector, FrameworkDetector, DependencyDetector, extension→language mapping), MetricsCollector, and AnalysisPipeline implemented. Routes, service, schemas, repository stubs exist. Remaining: AnalysisWriter. |
 | **AI** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
 | **Documentation** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist; `generators/` subdirectory present but empty. |
 | **Modernization** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
@@ -584,11 +606,11 @@ Uploads (M3) is now complete. Remaining modules will be implemented in milestone
               └──────────────┘
 ```
 
-✅ = implemented; (disc+det+fwk+dep) = discovery + detector framework + FrameworkDetector + DependencyDetector implemented; everything else is scaffolded.
+✅ = implemented; (disc+det+fwk+dep+metrics+pipeline) = discovery + detector framework + FrameworkDetector + DependencyDetector + MetricsCollector + AnalysisPipeline implemented; everything else is scaffolded.
 
 ### Next Milestones
 
-- **M4.7 (AnalysisWriter & Pipeline):** Pipeline orchestration, AnalysisService integration, database persistence
+- **M4.8 (AnalysisWriter):** AnalysisService integration, database persistence
 - **M5 (AI Integration):** Implement `ai` module — AI-powered project summary, file explanation, documentation generation, recommendations
 - **M6 (Dashboard):** Implement `reports` and `documentation` modules — dashboard endpoints, report generation, documentation viewer, modernization suggestions
 - **M7 (Finalization):** Testing, bug fixes, deployment configuration, remaining documentation
