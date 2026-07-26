@@ -403,3 +403,102 @@ def list_analyses_by_upload_paginated(
     query = db.query(Analysis).filter(Analysis.upload_id == upload_id)
     query = apply_sort(query, _ANALYSIS_SORT_FIELDS, opts)
     return _paginate(query, opts.page, opts.size)
+
+
+# ─── Dashboard aggregation helpers ────────────────────────────────
+
+
+def get_language_distribution(db: Session, analysis_id: int) -> list[tuple[str, int]]:
+    rows = (
+        db.query(AnalysisFile.language, func.count(AnalysisFile.id))
+        .filter(AnalysisFile.analysis_id == analysis_id, AnalysisFile.language.isnot(None))
+        .group_by(AnalysisFile.language)
+        .order_by(AnalysisFile.language)
+        .all()
+    )
+    return [(r[0], r[1]) for r in rows]
+
+
+def get_extension_distribution(db: Session, analysis_id: int) -> list[tuple[str, int]]:
+    rows = (
+        db.query(AnalysisFile.extension, func.count(AnalysisFile.id))
+        .filter(AnalysisFile.analysis_id == analysis_id, AnalysisFile.extension.isnot(None))
+        .group_by(AnalysisFile.extension)
+        .order_by(AnalysisFile.extension)
+        .all()
+    )
+    return [(r[0], r[1]) for r in rows]
+
+
+def get_largest_directories(db: Session, analysis_id: int, limit: int = 10) -> list[AnalysisFile]:
+    return (
+        db.query(AnalysisFile)
+        .filter(AnalysisFile.analysis_id == analysis_id, AnalysisFile.is_directory.is_(True))
+        .order_by(AnalysisFile.file_size.desc())
+        .limit(limit)
+        .all()
+    )
+
+
+def get_technology_category_distribution(db: Session, analysis_id: int) -> list[tuple[str, int]]:
+    rows = (
+        db.query(Technology.category, func.count(AnalysisTechnology.id))
+        .join(AnalysisTechnology, AnalysisTechnology.technology_id == Technology.id)
+        .filter(AnalysisTechnology.analysis_id == analysis_id)
+        .group_by(Technology.category)
+        .order_by(Technology.category)
+        .all()
+    )
+    return [(r[0], r[1]) for r in rows]
+
+
+def get_ecosystem_breakdown(db: Session, analysis_id: int) -> list[tuple[str, int]]:
+    rows = (
+        db.query(Dependency.ecosystem, func.count(Dependency.id))
+        .filter(Dependency.analysis_id == analysis_id, Dependency.ecosystem.isnot(None))
+        .group_by(Dependency.ecosystem)
+        .order_by(Dependency.ecosystem)
+        .all()
+    )
+    return [(r[0], r[1]) for r in rows]
+
+
+def get_dependency_type_counts(db: Session, analysis_id: int) -> tuple[int, int]:
+    rows = (
+        db.query(Dependency.type, func.count(Dependency.id))
+        .filter(Dependency.analysis_id == analysis_id)
+        .group_by(Dependency.type)
+        .all()
+    )
+    type_map = dict(rows)
+    return type_map.get("library", 0), type_map.get("dev", 0)
+
+
+def get_top_dependencies(db: Session, analysis_id: int, limit: int = 10) -> list[Dependency]:
+    return (
+        db.query(Dependency)
+        .filter(Dependency.analysis_id == analysis_id)
+        .order_by(Dependency.name)
+        .limit(limit)
+        .all()
+    )
+
+
+def get_detector_breakdown(db: Session, analysis_id: int) -> list[tuple[str, int]]:
+    rows = (
+        db.query(AnalysisWarning.detector_name, func.count(AnalysisWarning.id))
+        .filter(AnalysisWarning.analysis_id == analysis_id)
+        .group_by(AnalysisWarning.detector_name)
+        .order_by(AnalysisWarning.detector_name)
+        .all()
+    )
+    return [(r[0], r[1]) for r in rows]
+
+
+def count_analysis_directories(db: Session, analysis_id: int) -> int:
+    return (
+        db.query(func.count(AnalysisFile.id))
+        .filter(AnalysisFile.analysis_id == analysis_id, AnalysisFile.is_directory.is_(True))
+        .scalar()
+        or 0
+    )

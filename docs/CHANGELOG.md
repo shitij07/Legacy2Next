@@ -94,10 +94,44 @@
 
 ### Architecture
 - AnalysisQueryService is read-only — never writes, commits, rollbacks, or flushes
-- Read/write path separation: AnalysisQueryService and AnalysisService share only the repository layer
+- Read/write path separation: AnalysisQueryService and AnalysisQueryService share only the repository layer
 - Repositories remain persistence-only: paginated queries return ORM models, no joins, no aggregation
 - DTOs isolate API from ORM — all 8 responses are Pydantic models, never ORM entities
 - Ownership validation on every GET endpoint via `_get_owned_analysis` (walk: Analysis → Upload → Project → user_id)
 - Pagination: offset/limit (page/size), 3 default sizes (20 for list, 50 for sub-resources)
 - Deterministic defaults: files by relative_path asc, deps by name asc, warnings by created_at desc
 - All 407 tests passing in test_analysis
+
+## 2026-07-26 — M5.2B Shared Query Infrastructure
+
+### Added
+- `backend/app/modules/analysis/query_options.py` — `QueryOptions`, `Page[T]`, `FileFilter`, `DependencyFilter`, `WarningFilter`, `apply_sort()`
+
+### Changed
+- `backend/app/modules/analysis/repository.py` — 5 paginated methods accept `(filter, opts)` and return `Page[ORM]`; added `_apply_file_filters`, `_apply_dependency_filters`, `_apply_warning_filters` with ILIKE search support
+- `backend/app/modules/analysis/query_service.py` — Constructs filter+opts objects, validates sort_by, converts `Page` → `PaginatedResponse`; added `search` param to files/deps/warnings
+- `backend/app/modules/analysis/routes.py` — Added `search: str | None = Query(None, min_length=2)` to files, dependencies, warnings endpoints
+- `backend/tests/test_analysis/test_query_api.py` — 7 new search tests, 76 total
+
+### Architecture
+- QueryOptions and filter dataclasses are frozen (immutable)
+- apply_sort() is a single shared helper — no per-repository sort repetition
+- Search is case-insensitive ILIKE, min 2 chars, matches file_name/relative_path (files), name (deps), message (warnings)
+- All 414 tests passing (was 407)
+
+## 2026-07-26 — M5.3B Dashboard Aggregation
+
+### Added
+- `backend/app/modules/analysis/dashboard_service.py` — `DashboardService.get_dashboard()` with 6 section builders: general, files, technologies, dependencies, warnings, metrics. Ownership validation, derived values, no writes.
+- `backend/app/modules/analysis/dashboard_schemas.py` — 9 nested Pydantic DTOs: `DashboardResponse`, `GeneralSection`, `FilesSection`, `TechnologiesSection`, `DependenciesSection`, `WarningsSection`, `MetricsSection`, plus `LanguageCount`, `ExtensionCount`, `DirectorySize`, `CategoryCount`, `ConfidenceCount`, `EcosystemBreakdown`, `TopPackage`, `DetectorCount`
+- `backend/app/modules/analysis/repository.py` — 9 aggregation methods returning raw tuples/ORM entities: `get_language_distribution`, `get_extension_distribution`, `get_largest_directories`, `get_technology_category_distribution`, `get_ecosystem_breakdown`, `get_dependency_type_counts`, `get_top_dependencies`, `get_detector_breakdown`, `count_analysis_directories`
+- `backend/app/modules/analysis/routes.py` — `GET /analysis/{analysis_id}/dashboard` endpoint returning `DashboardResponse`
+- `backend/tests/test_analysis/test_dashboard_api.py` — 51 tests across 15 test classes covering all sections, empty data, ownership, DTO mapping, determinism, no-writes, serialization
+
+### Architecture
+- DashboardService owns orchestration — repositories return raw aggregation data only (COUNT, GROUP BY tuples, ORM entities)
+- No DTO construction in repositories — all DTO mapping happens in DashboardService
+- No caching — deferred to M5.4
+- No Health section — deferred to M6 (AI insights)
+- Nested DTO structure — each section independently evolvable
+- All 465 tests passing (was 414)

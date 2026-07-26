@@ -34,19 +34,19 @@ Last Updated: 2026-07-26
 
 # Current Goal
 
-Milestone 5 — AI Integration (M5.1 Analysis Retrieval complete).
+Milestone 5 — Dashboard Aggregation (M5.3 Dashboard Aggregation complete).
 
 ---
 
 # Current Task
 
-- AI Project Summary and module implementation (M5.2)
+- Performance & Optimisation (M5.4)
 
 ---
 
 # Current Focus
 
-Analysis retrieval API is implemented (407 tests). Moving to AI Integration for project summary generation.
+Dashboard aggregation endpoint implemented (465 tests). Moving to performance tuning and caching.
 
 ---
 
@@ -74,12 +74,14 @@ Analysis retrieval API is implemented (407 tests). Moving to AI Integration for 
 - M4.8B AnalysisWriter: `writer.py` (AnalysisWriter class writing files, technologies, dependencies, metrics, warnings, status), `repository.py` (6 batch helpers, no commit), `analysis_warning.py` model, `test_writer.py` (26 tests covering all write operations, error aggregation, determinism, transactional boundary), 311 total
 - M4.9B API Integration: `service.py` (run_analysis with transaction ownership, upload validation, pipeline construction, lifecycle management), `schemas.py` (AnalysisResponse), `routes.py` (POST /analysis/{upload_id}), `test_api_integration.py` (27 tests covering success, ownership, error states, status transitions, rollback), 338 total
 - M5.1B Analysis Retrieval: `query_service.py` (AnalysisQueryService with 8 retrieval methods), `schemas.py` (8 DTOs + PaginatedResponse), `routes.py` (8 GET endpoints), `repository.py` (9 paginated/filtered read methods), `test_query_api.py` (69 tests covering summary, files, technologies, dependencies, metrics, warnings, project/upload listing, pagination, filtering, sorting, ownership, DTO mapping, determinism, no-writes), 407 total
+- M5.2B Shared Query Infrastructure: `query_options.py` (QueryOptions, Page[T], FileFilter, DependencyFilter, WarningFilter, apply_sort()), refactored repository paginated methods to accept `(filter, opts)` and return `Page[ORM]`, refactored query_service to construct filter+opts, added `search` substring (ILIKE) to files/dependencies/warnings endpoints, 76 tests (was 69), 414 total
+- M5.3B Dashboard Aggregation: `dashboard_service.py` (DashboardService with 6 section builders, ownership validation, derived value computation), `dashboard_schemas.py` (9 nested DTOs: DashboardResponse, GeneralSection, FilesSection, TechnologiesSection, DependenciesSection, WarningsSection, MetricsSection, plus supporting sub-DTOs), `repository.py` (9 new aggregation methods — GROUP BY, COUNT, ORDER BY LIMIT — returning raw tuples/ORM entities only), `routes.py` (GET /analysis/{analysis_id}/dashboard), `test_dashboard_api.py` (51 tests covering all sections, empty data, ownership, DTO mapping, determinism, no-writes, serialization), 465 total
 
 ---
 
 # In Progress
 
-Milestone 5 — AI Integration (M5.1 Analysis Retrieval complete)
+Milestone 5 — Performance & Optimisation (M5.4)
 
 ---
 
@@ -91,7 +93,7 @@ None.
 
 # Next Tasks
 
-1. AI Integration — Project Summary (M5.2)
+1. Performance & Optimisation — Caching and query tuning (M5.4)
 
 ---
 
@@ -231,17 +233,16 @@ Status: Complete (338 tests passing)
 
 ---
 
-## Milestone 5 — AI Integration
+## Milestone 5 — Analysis Modules
 
-Status: In Progress (M5.1 complete)
+Status: In Progress (M5.3 Dashboard complete)
 
 Tasks
 
 - [x] M5.1 Analysis Retrieval API
-- [ ] AI Project Summary
-- [ ] AI File Explanation
-- [ ] AI Documentation
-- [ ] AI Recommendations
+- [x] M5.2 Shared Query Infrastructure
+- [x] M5.3 Dashboard Aggregation
+- [ ] M5.4 Performance & Optimisation
 
 ---
 
@@ -1077,8 +1078,8 @@ Next
 
 # Definition of Current State
 
-Milestone 4 (Static Analysis) is **complete** with all 9 submodules implemented and tested. Milestone 5.1 (Analysis Retrieval) is also **complete**. Total: 407 tests in test_analysis, zero failures. Milestone 1 has 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete.
+Milestone 4 (Static Analysis) is **complete** with all 9 submodules implemented and tested. Milestones 5.1 (Analysis Retrieval), 5.2 (Shared Query Infrastructure), and 5.3 (Dashboard Aggregation) are also **complete**. Total: 465 tests in test_analysis, zero failures. Milestone 1 has 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete.
 
-The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), and Analysis module (14 endpoints — 6 POST + 8 GET) with Discovery Engine, Detector Framework (4 detectors), MetricsCollector, AnalysisPipeline, AnalysisWriter, API Integration, and Retrieval API. The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 base tables + 6 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
+The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), and Analysis module (15 endpoints — 6 POST + 9 GET) with Discovery Engine, Detector Framework (4 detectors), MetricsCollector, AnalysisPipeline, AnalysisWriter, API Integration, Retrieval API, and Dashboard Aggregation. The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 base tables + 6 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
 
-The next session should begin Milestone 5.2 (AI Integration) planning and implementation.
+The next session should begin Milestone 5.4 (Performance & Optimisation).

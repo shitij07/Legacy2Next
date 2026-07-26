@@ -6,6 +6,8 @@ from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.modules.analysis import query_service
 from app.modules.analysis import service as analysis_service
+from app.modules.analysis.dashboard_schemas import DashboardResponse
+from app.modules.analysis.dashboard_service import get_dashboard as get_dashboard_data
 from app.modules.analysis.schemas import (
     AnalysisDependencyResponse,
     AnalysisFileResponse,
@@ -83,6 +85,19 @@ def get_analysis_summary(
     db: Session = Depends(get_db),
 ):
     return query_service.get_analysis_summary(
+        db=db,
+        user_id=current_user.id,
+        analysis_id=analysis_id,
+    )
+
+
+@router.get("/{analysis_id}/dashboard", response_model=DashboardResponse)
+def get_dashboard(
+    analysis_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return get_dashboard_data(
         db=db,
         user_id=current_user.id,
         analysis_id=analysis_id,

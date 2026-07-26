@@ -210,6 +210,61 @@ AnalysisQueryService
 
 **Sorting:** Deterministic defaults — files by `relative_path` asc, dependencies by `name` asc, warnings by `created_at` desc, analysis lists by `created_at` desc.
 
+### DashboardService — Aggregation Layer
+
+`DashboardService` provides a single frontend-ready endpoint that aggregates analysis data into a nested response. It is completely independent from `AnalysisQueryService` (entity retrieval) and `AnalysisService` (write path).
+
+```
+Client (GET /analysis/{id}/dashboard)
+     │
+     ▼
+DashboardService.get_dashboard()
+     │
+     ├── _build_general_section()        → GeneralSection
+     ├── _build_files_section()          → FilesSection
+     │   ├── count_analysis_files
+     │   ├── count_analysis_directories
+     │   ├── get_language_distribution    (GROUP BY language)
+     │   ├── get_extension_distribution   (GROUP BY extension)
+     │   └── get_largest_directories
+     ├── _build_technologies_section()   → TechnologiesSection
+     │   ├── list_analysis_technologies_with_tech
+     │   └── get_technology_category_distribution (GROUP BY category)
+     ├── _build_dependencies_section()   → DependenciesSection
+     │   ├── count_dependencies
+     │   ├── get_dependency_type_counts   (library vs dev)
+     │   ├── get_ecosystem_breakdown      (GROUP BY ecosystem)
+     │   └── get_top_dependencies
+     ├── _build_warnings_section()       → WarningsSection
+     │   ├── count_warnings
+     │   └── get_detector_breakdown       (GROUP BY detector_name)
+     └── _build_metrics_section()        → MetricsSection
+         └── list_metrics                (key-value lookup)
+```
+
+**Repository responsibility:** Raw aggregation data only — COUNT values, GROUP BY tuples, ORM entities. No DTO construction, no presentation logic.
+
+**Service responsibility:** Orchestration, DTO construction, derived values (confidence_distribution, primary_frameworks, metric lookups).
+
+**Ownership validation:** Reuses the same FK-chain pattern (`Analysis → Upload → Project → user_id`).
+
+**Never writes:** `DashboardService` never calls `db.commit()`, `db.rollback()`, or `db.flush()`. All repository aggregation methods are SELECT-only.
+
+**DTO structure:** Nested `DashboardResponse` with 6 sections — no Health section (deferred to M6), no caching (deferred to M5.4).
+
+**Aggregation methods on repository:**
+| Method | Returns | SQL |
+|--------|---------|-----|
+| `get_language_distribution` | `list[tuple[str, int]]` | `GROUP BY language` |
+| `get_extension_distribution` | `list[tuple[str, int]]` | `GROUP BY extension` |
+| `get_largest_directories` | `list[AnalysisFile]` | `WHERE is_directory ORDER BY file_size DESC LIMIT 10` |
+| `get_technology_category_distribution` | `list[tuple[str, int]]` | JOIN + `GROUP BY category` |
+| `get_ecosystem_breakdown` | `list[tuple[str, int]]` | `GROUP BY ecosystem` |
+| `get_dependency_type_counts` | `tuple[int, int]` | `GROUP BY type` |
+| `get_top_dependencies` | `list[Dependency]` | `ORDER BY name LIMIT 10` |
+| `get_detector_breakdown` | `list[tuple[str, int]]` | `GROUP BY detector_name` |
+| `count_analysis_directories` | `int` | `COUNT WHERE is_directory` |
+
 ### Module-internal convention
 
 Every module under `modules/` follows a consistent file layout:
@@ -223,7 +278,15 @@ module_name/
 └── repository.py      # SQLAlchemy queries (data access)
 ```
 
-The `analysis` module contains an extra `detectors/` subdirectory for future pluggable analysis strategies. The detection framework (BaseDetector, LanguageDetector, FrameworkDetector, DependencyDetector) is now implemented; the existing `detectors/language.py`, `detectors/framework.py`, `detectors/dependency.py` stubs remain unused until migration.
+The `analysis` module contains an extra `detectors/` subdirectory for future pluggable analysis strategies, and three additional files for the dashboard aggregation layer:
+
+```
+dashboard_schemas.py   # Dashboard DTOs (nested response model)
+dashboard_service.py   # Aggregation orchestration (read-only)
+query_options.py       # Shared query infrastructure (QueryOptions, Page[T], filter dataclasses)
+```
+
+The detection framework (BaseDetector, LanguageDetector, FrameworkDetector, DependencyDetector) is now implemented; the existing `detectors/language.py`, `detectors/framework.py`, `detectors/dependency.py` stubs remain unused until migration.
 
 ---
 
@@ -650,6 +713,6 @@ Uploads (M3) is now complete. Remaining modules will be implemented in milestone
 
 ### Next Milestones
 
-- **M5 (AI Integration):** Implement `ai` module — AI-powered project summary, file explanation, documentation generation, recommendations
-- **M6 (Dashboard):** Implement `reports` and `documentation` modules — dashboard endpoints, report generation, documentation viewer, modernization suggestions
+- **M5.4 (Performance & Optimisation):** Caching (TTLCache → Redis), performance tuning, query optimisation
+- **M6 (AI & Dashboard):** Implement `ai` module (project summary, file explanation, documentation generation, recommendations); extend dashboard with `HealthSection`, AI insights; implement `reports` and `documentation` modules
 - **M7 (Finalization):** Testing, bug fixes, deployment configuration, remaining documentation
