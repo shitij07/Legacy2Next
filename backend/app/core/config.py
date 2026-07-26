@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Legacy2Next"
     VERSION: str = "0.1.0"
     DEBUG: bool = False
+    DATABASE_ECHO: bool = False
 
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/legacy2next"
 
