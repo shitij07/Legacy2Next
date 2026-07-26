@@ -99,6 +99,7 @@ def get_analysis_files(
     extension: str | None = None,
     language: str | None = None,
     is_directory: bool | None = None,
+    search: str | None = Query(None, min_length=2),
     sort_by: str = "relative_path",
     sort_dir: str = "asc",
 ):
@@ -111,6 +112,7 @@ def get_analysis_files(
         extension=extension,
         language=language,
         is_directory=is_directory,
+        search=search,
         sort_by=sort_by,
         sort_dir=sort_dir,
     )
@@ -138,6 +140,7 @@ def get_analysis_dependencies(
     size: int = Query(50, ge=1, le=200),
     ecosystem: str | None = None,
     type: str | None = None,
+    search: str | None = Query(None, min_length=2),
     sort_by: str = "name",
     sort_dir: str = "asc",
 ):
@@ -149,6 +152,7 @@ def get_analysis_dependencies(
         size=size,
         ecosystem=ecosystem,
         type=type,
+        search=search,
         sort_by=sort_by,
         sort_dir=sort_dir,
     )
@@ -175,6 +179,7 @@ def get_analysis_warnings(
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=200),
     detector_name: str | None = None,
+    search: str | None = Query(None, min_length=2),
     sort_by: str = "created_at",
     sort_dir: str = "desc",
 ):
@@ -185,6 +190,7 @@ def get_analysis_warnings(
         page=page,
         size=size,
         detector_name=detector_name,
+        search=search,
         sort_by=sort_by,
         sort_dir=sort_dir,
     )

@@ -382,6 +382,37 @@ class TestAnalysisFiles:
         assert result.items[0].relative_path == "a.py"
         assert result.items[1].relative_path == "z.py"
 
+    def test_filter_by_search(self, db_session: Session, user: User, upload: Upload):
+        analysis = _create_analysis(db_session, upload)
+        _add_file(db_session, analysis.id, relative_path="src/main.py", file_name="main.py")
+        _add_file(db_session, analysis.id, relative_path="src/utils.py", file_name="utils.py")
+        _add_file(db_session, analysis.id, relative_path="README.md", file_name="README.md")
+        db_session.commit()
+
+        result = query_service.get_analysis_files(db_session, user.id, analysis.id, search="main")
+
+        assert len(result.items) == 1
+        assert result.items[0].file_name == "main.py"
+
+    def test_search_matches_relative_path(self, db_session: Session, user: User, upload: Upload):
+        analysis = _create_analysis(db_session, upload)
+        _add_file(db_session, analysis.id, relative_path="src/components/Button.tsx", file_name="Button.tsx")
+        _add_file(db_session, analysis.id, relative_path="src/hooks/useAuth.ts", file_name="useAuth.ts")
+        db_session.commit()
+
+        result = query_service.get_analysis_files(db_session, user.id, analysis.id, search="component")
+
+        assert len(result.items) == 1
+
+    def test_search_is_case_insensitive(self, db_session: Session, user: User, upload: Upload):
+        analysis = _create_analysis(db_session, upload)
+        _add_file(db_session, analysis.id, relative_path="SRC/APP.PY", file_name="APP.PY")
+        db_session.commit()
+
+        result = query_service.get_analysis_files(db_session, user.id, analysis.id, search="app")
+
+        assert len(result.items) == 1
+
     def test_not_found(self, db_session: Session, user: User):
         with pytest.raises(NotFoundException):
             query_service.get_analysis_files(db_session, user.id, 9999)
@@ -538,6 +569,29 @@ class TestAnalysisDependencies:
         assert result.items[0].name == "alpha"
         assert result.items[1].name == "zoo"
 
+    def test_filter_by_search(self, db_session: Session, user: User, upload: Upload):
+        analysis = _create_analysis(db_session, upload)
+        _add_dependency(db_session, analysis.id, name="express")
+        _add_dependency(db_session, analysis.id, name="express-session")
+        _add_dependency(db_session, analysis.id, name="lodash")
+        db_session.commit()
+
+        result = query_service.get_analysis_dependencies(db_session, user.id, analysis.id, search="express")
+
+        assert len(result.items) == 2
+        names = {d.name for d in result.items}
+        assert "express" in names
+        assert "express-session" in names
+
+    def test_dependency_search_is_case_insensitive(self, db_session: Session, user: User, upload: Upload):
+        analysis = _create_analysis(db_session, upload)
+        _add_dependency(db_session, analysis.id, name="DJANGO")
+        db_session.commit()
+
+        result = query_service.get_analysis_dependencies(db_session, user.id, analysis.id, search="django")
+
+        assert len(result.items) == 1
+
     def test_not_found(self, db_session: Session, user: User):
         with pytest.raises(NotFoundException):
             query_service.get_analysis_dependencies(db_session, user.id, 9999)
@@ -673,6 +727,27 @@ class TestAnalysisWarnings:
 
         assert result.items[0].message == "second"
         assert result.items[1].message == "first"
+
+    def test_filter_by_search(self, db_session: Session, user: User, upload: Upload):
+        analysis = _create_analysis(db_session, upload)
+        _add_warning(db_session, analysis.id, message="Suspicious file detected")
+        _add_warning(db_session, analysis.id, message="Large binary blob")
+        _add_warning(db_session, analysis.id, message="Another warning")
+        db_session.commit()
+
+        result = query_service.get_analysis_warnings(db_session, user.id, analysis.id, search="suspicious")
+
+        assert len(result.items) == 1
+        assert result.items[0].message == "Suspicious file detected"
+
+    def test_warning_search_is_case_insensitive(self, db_session: Session, user: User, upload: Upload):
+        analysis = _create_analysis(db_session, upload)
+        _add_warning(db_session, analysis.id, message="BINARY BLOB")
+        db_session.commit()
+
+        result = query_service.get_analysis_warnings(db_session, user.id, analysis.id, search="binary")
+
+        assert len(result.items) == 1
 
     def test_not_found(self, db_session: Session, user: User):
         with pytest.raises(NotFoundException):

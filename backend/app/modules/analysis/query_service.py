@@ -2,6 +2,12 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import NotFoundException
 from app.modules.analysis import repository
+from app.modules.analysis.query_options import (
+    DependencyFilter,
+    FileFilter,
+    QueryOptions,
+    WarningFilter,
+)
 from app.modules.analysis.schemas import (
     AnalysisDependencyResponse,
     AnalysisFileResponse,
@@ -12,6 +18,28 @@ from app.modules.analysis.schemas import (
     AnalysisWarningResponse,
     PaginatedResponse,
 )
+
+
+_FILE_SORT_FIELDS = {"relative_path", "file_size", "extension", "language"}
+_DEP_SORT_FIELDS = {"name", "ecosystem", "type"}
+_WARNING_SORT_FIELDS = {"created_at", "detector_name"}
+_ANALYSIS_SORT_FIELDS = {"created_at", "status"}
+
+
+def _validate_sort(allowed: set[str], sort_by: str) -> str:
+    if sort_by not in allowed:
+        return next(iter(allowed))
+    return sort_by
+
+
+def _to_paginated_response(page, dto_cls):
+    return PaginatedResponse(
+        items=[dto_cls.model_validate(item) for item in page.items],
+        total=page.total,
+        page=page.page,
+        size=page.size,
+        pages=page.pages,
+    )
 
 
 def _get_owned_analysis(db: Session, user_id: int, analysis_id: int):
@@ -62,20 +90,21 @@ def get_analysis_files(
     extension: str | None = None,
     language: str | None = None,
     is_directory: bool | None = None,
+    search: str | None = None,
     sort_by: str = "relative_path",
     sort_dir: str = "asc",
 ) -> PaginatedResponse[AnalysisFileResponse]:
     _get_owned_analysis(db, user_id, analysis_id)
-    items, total, pages = repository.list_analysis_files_paginated(
-        db, analysis_id, page, size, extension, language, is_directory, sort_by, sort_dir,
+    sort_by = _validate_sort(_FILE_SORT_FIELDS, sort_by)
+    opts = QueryOptions(page=page, size=size, sort_by=sort_by, sort_dir=sort_dir)
+    filter = FileFilter(
+        extension=extension,
+        language=language,
+        is_directory=is_directory,
+        search=search,
     )
-    return PaginatedResponse(
-        items=[AnalysisFileResponse.model_validate(f) for f in items],
-        total=total,
-        page=page,
-        size=size,
-        pages=pages,
-    )
+    page_result = repository.list_analysis_files_paginated(db, analysis_id, filter, opts)
+    return _to_paginated_response(page_result, AnalysisFileResponse)
 
 
 def get_analysis_technologies(
@@ -105,19 +134,21 @@ def get_analysis_dependencies(
     size: int = 50,
     ecosystem: str | None = None,
     type: str | None = None,
+    search: str | None = None,
     sort_by: str = "name",
     sort_dir: str = "asc",
 ) -> PaginatedResponse[AnalysisDependencyResponse]:
     _get_owned_analysis(db, user_id, analysis_id)
-    items, total, pages = repository.list_dependencies_paginated(
-        db, analysis_id, page, size, ecosystem, type, sort_by, sort_dir,
-    )
+    sort_by = _validate_sort(_DEP_SORT_FIELDS, sort_by)
+    opts = QueryOptions(page=page, size=size, sort_by=sort_by, sort_dir=sort_dir)
+    filter = DependencyFilter(ecosystem=ecosystem, type=type, search=search)
+    page_result = repository.list_dependencies_paginated(db, analysis_id, filter, opts)
     return PaginatedResponse(
-        items=[_to_dep_response(d) for d in items],
-        total=total,
-        page=page,
-        size=size,
-        pages=pages,
+        items=[_to_dep_response(d) for d in page_result.items],
+        total=page_result.total,
+        page=page_result.page,
+        size=page_result.size,
+        pages=page_result.pages,
     )
 
 
@@ -156,20 +187,16 @@ def get_analysis_warnings(
     page: int = 1,
     size: int = 50,
     detector_name: str | None = None,
+    search: str | None = None,
     sort_by: str = "created_at",
     sort_dir: str = "desc",
 ) -> PaginatedResponse[AnalysisWarningResponse]:
     _get_owned_analysis(db, user_id, analysis_id)
-    items, total, pages = repository.list_warnings_paginated(
-        db, analysis_id, page, size, detector_name, sort_by, sort_dir,
-    )
-    return PaginatedResponse(
-        items=[AnalysisWarningResponse.model_validate(w) for w in items],
-        total=total,
-        page=page,
-        size=size,
-        pages=pages,
-    )
+    sort_by = _validate_sort(_WARNING_SORT_FIELDS, sort_by)
+    opts = QueryOptions(page=page, size=size, sort_by=sort_by, sort_dir=sort_dir)
+    filter = WarningFilter(detector_name=detector_name, search=search)
+    page_result = repository.list_warnings_paginated(db, analysis_id, filter, opts)
+    return _to_paginated_response(page_result, AnalysisWarningResponse)
 
 
 def list_project_analyses(
@@ -185,15 +212,15 @@ def list_project_analyses(
     project = projects_repository.get_project_by_id(db, project_id)
     if project is None or project.user_id != user_id:
         raise NotFoundException("Project")
-    items, total, pages = repository.list_analyses_by_project_paginated(
-        db, project_id, page, size, sort_by, sort_dir,
-    )
+    sort_by = _validate_sort(_ANALYSIS_SORT_FIELDS, sort_by)
+    opts = QueryOptions(page=page, size=size, sort_by=sort_by, sort_dir=sort_dir)
+    page_result = repository.list_analyses_by_project_paginated(db, project_id, opts)
     return PaginatedResponse(
-        items=[_to_list_item(a) for a in items],
-        total=total,
-        page=page,
-        size=size,
-        pages=pages,
+        items=[_to_list_item(a) for a in page_result.items],
+        total=page_result.total,
+        page=page_result.page,
+        size=page_result.size,
+        pages=page_result.pages,
     )
 
 
@@ -214,15 +241,15 @@ def list_upload_analyses(
     project = projects_repository.get_project_by_id(db, upload.project_id)
     if project is None or project.user_id != user_id:
         raise NotFoundException("Upload")
-    items, total, pages = repository.list_analyses_by_upload_paginated(
-        db, upload_id, page, size, sort_by, sort_dir,
-    )
+    sort_by = _validate_sort(_ANALYSIS_SORT_FIELDS, sort_by)
+    opts = QueryOptions(page=page, size=size, sort_by=sort_by, sort_dir=sort_dir)
+    page_result = repository.list_analyses_by_upload_paginated(db, upload_id, opts)
     return PaginatedResponse(
-        items=[_to_list_item(a) for a in items],
-        total=total,
-        page=page,
-        size=size,
-        pages=pages,
+        items=[_to_list_item(a) for a in page_result.items],
+        total=page_result.total,
+        page=page_result.page,
+        size=page_result.size,
+        pages=page_result.pages,
     )
 
 
