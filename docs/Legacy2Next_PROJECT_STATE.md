@@ -59,6 +59,7 @@ The current priority is completing the remaining Milestone 1 task: frontend setu
 - Docker Compose setup: `db` (PostgreSQL 16 Alpine) + `backend` (FastAPI) with health checks, named volumes, and default bridge networking
 - Authentication system: register, login (JWT), password hashing (bcrypt via passlib), get_current_user dependency, protected `/auth/me` endpoint
 - Architecture documentation: `docs/ARCHITECTURE.md` with implemented/planned separation, Mermaid diagrams, layer architecture, request lifecycle, authentication flow, database schema, Docker Compose architecture, error handling, module organisation, and architecture evolution roadmap
+- Engineering decision log: `docs/DECISIONS.md` with 18 decisions covering technology stack, application architecture, database/migrations, authentication/security, Docker/infrastructure, and deferred features; each decision documents context, rationale, consequences, alternatives, and revisit conditions
 
 ---
 
@@ -164,6 +165,7 @@ Tasks
 
 docs/
 ├── ARCHITECTURE.md
+├── DECISIONS.md
 ├── Legacy2Next_MASTER_PLAN.md
 ├── Legacy2Next_AI_CONTEXT.md
 ├── Legacy2Next_PROJECT_STATE.md
@@ -240,6 +242,7 @@ Deployment
 - Authentication uses JWT (HS256, 30-min expiry, `sub`/`iat`/`exp` claims), bcrypt via `passlib` (pinned `bcrypt<4.1.0` for compatibility), and stateless client-side logout.
 - Registration returns user profile without issuing a JWT; tokens are only issued via `/auth/login`.
 - `get_current_user` dependency lives in `app/core/dependencies.py` for reuse across all modules.
+- Engineering decision log formalised in `docs/DECISIONS.md` — each decision documents context, rationale, consequences, alternatives considered, and future revisit conditions; deferred features are grouped to avoid decision inflation.
 
 ---
 
@@ -399,10 +402,41 @@ Next
 
 ---
 
+## Session 7 — 2026-07-26
+
+Completed
+
+- Created `docs/DECISIONS.md` with 18 engineering decisions: FastAPI, SQLAlchemy ORM, PostgreSQL, PEP 621 pyproject.toml, Repository Pattern, Service Layer, Centralised Models, Consistent Module Structure, Alembic Migrations, Explicit Database Migrations, JWT Authentication, Stateless Authentication, bcrypt via passlib, bcrypt Version Pin, Registration Does Not Issue JWT, Docker Compose for Development, Explicit Package Discovery, and Deferred Authentication Features (Refresh Tokens, RBAC, Email Verification, Password Reset)
+- Updated `docs/Legacy2Next_PROJECT_STATE.md` to reflect DECISIONS.md completion
+
+Design Decisions
+
+- Implementation-level choices (e.g., email-validator) excluded from DECISIONS.md — kept in DEVELOPMENT_GUIDE.md scope
+- Comparison-style decision names avoided — alternatives discussed only inside the Alternatives Considered section
+- Deferred features grouped into a single decision with subsections to avoid decision count inflation
+
+Next
+
+- Frontend initialization
+
+Design Decisions
+
+- Architecture document uses Implemented/Planned section split so every statement is verifiable from the current codebase
+- Mermaid diagrams used only where they improve understanding (layer architecture, auth sequence, Docker Compose topology)
+- Cross-references MASTER_PLAN.md, AI_CONTEXT.md, PROJECT_STATE.md instead of duplicating information
+- Scaffolded modules clearly labelled as stubs; auth module as the only fully implemented module
+- Empty placeholder directories (workers/, integrations/, detectors/, generators/) explicitly noted
+
+Next
+
+- Frontend initialization
+
+---
+
 # Definition of Current State
 
 The project has moved from planning to active development (v0.1.0).
 
-Milestone 1 is in progress with 5 of 6 tasks complete. The backend has a complete authentication system (register, login, JWT, protected endpoint), is containerized via Docker Compose with PostgreSQL 16 Alpine, and has the initial Alembic migration applied. The backend skeleton is fully established with a modular FastAPI structure, SQLAlchemy models, Alembic migrations, and all 8 feature modules scaffolded with routes, services, schemas, and repository separation. Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation.
+Milestone 1 is in progress with 5 of 6 tasks complete. The backend has a complete authentication system (register, login, JWT, protected endpoint), is containerized via Docker Compose with PostgreSQL 16 Alpine, and has the initial Alembic migration applied. The backend skeleton is fully established with a modular FastAPI structure, SQLAlchemy models, Alembic migrations, and all 8 feature modules scaffolded with routes, services, schemas, and repository separation. Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are recorded in `docs/DECISIONS.md` with 18 entries covering technology stack, application architecture, database/migrations, authentication/security, Docker/infrastructure, and deferred features.
 
 The next session should initialize the frontend — the last remaining Milestone 1 task.
