@@ -18,13 +18,13 @@
 
 Project Name: Legacy2Next
 
-Version: 0.2.0
+Version: 0.3.0
 
 Current Phase: Development
 
-Current Sprint: Sprint 2 - Project Management
+Current Sprint: Sprint 3 - Uploads Module
 
-Overall Progress: 30%
+Overall Progress: 40%
 
 Status: In Progress
 
@@ -34,19 +34,19 @@ Last Updated: 2026-07-26
 
 # Current Goal
 
-Complete Milestone 2 — Project Management by implementing the remaining tasks: ZIP upload, file extraction, and project storage.
+Begin Milestone 4 — Static Analysis by implementing the analysis module (language detection, framework detection, dependency parsing, file metadata extraction).
 
 ---
 
 # Current Task
 
-- Upload module implementation (ZIP upload, file extraction, project storage)
+- Analysis module implementation
 
 ---
 
 # Current Focus
 
-The current priority is completing the Upload module — the remaining Milestone 2 task.
+The current priority is implementing the Analysis module — the remaining modules after completing M2 (Projects) and M3 (Uploads).
 
 ---
 
@@ -62,12 +62,14 @@ The current priority is completing the Upload module — the remaining Milestone
 - Engineering decision log: `docs/DECISIONS.md` with 18 decisions covering technology stack, application architecture, database/migrations, authentication/security, Docker/infrastructure, and deferred features; each decision documents context, rationale, consequences, alternatives, and revisit conditions
 - API contract: `docs/API_CONTRACT.md` documenting all 4 implemented endpoints (GET /health, POST /auth/register, POST /auth/login, GET /auth/me) with full request/response schemas, validation rules, error codes, behaviour origins (framework vs application), examples, and future endpoint placeholders
 - Projects module: 5 CRUD endpoints (POST/GET/GET-by-id/PATCH/DELETE /projects), all auth-required, ownership-scoped via `_get_owned_project` helper, `ValidationException` added to exception hierarchy for PATCH-with-no-fields validation, repository uses ORM-object interfaces, projects router registered in `app/main.py`
+- Uploads module (M3): complete multi-file upload system — Upload SQLAlchemy model (uploads table, FK to projects, SHA-256 hash, 5 indexes), config settings (UPLOAD_ROOT, MAX_FILE_SIZE_MB, MAX_FILES_PER_REQUEST, MAX_REQUEST_SIZE_MB, ALLOWED_EXTENSIONS, MAX_PROJECT_STORAGE_GB), StorageProvider abstraction (ABC + LocalStorageProvider with UUID hex filenames), Pydantic schemas (UploadResponse, UploadListResponse), repository layer (5 functions), QuotaService for per-project storage enforcement, service layer with batch commit/rollback and file-first delete strategy, 4 endpoints (POST/GET /projects/{id}/uploads, GET/DELETE /uploads/{id}), extended AppException hierarchy (FileValidationException, QuotaExceededException, StorageException), DI factories in core/dependencies.py, Alembic migration e6da2e749540, old upload/ stub removed, targeted engineering review applied (removed sha256_hash from response, added logging for rollback cleanup)
+- Documentation updated for M3: API_CONTRACT.md with 4 upload endpoint sections (13 total endpoints), ARCHITECTURE.md with Upload model/storage layer/updated module org, PROJECT_STATE.md with M3 completion
 
 ---
 
 # In Progress
 
-Milestone 2 — Project Management (1/3 tasks complete)
+Milestone 4 — Static Analysis (0/4 tasks complete)
 
 ---
 
@@ -79,7 +81,7 @@ None.
 
 # Next Tasks
 
-1. Implement Upload module (ZIP upload, file extraction, project storage)
+1. Implement Analysis module (language detection, framework detection, dependency parsing, file metadata extraction)
 
 ---
 
@@ -100,19 +102,39 @@ Tasks
 
 ---
 
-## Milestone 2 — Project Management
+## Milestone 2 — Projects Module
 
-Status: In Progress (1/3)
+Status: Complete
 
 Tasks
 
-- [x] Project CRUD
-- [ ] ZIP Upload
-- [ ] Project Storage
+- [x] Project CRUD (5 endpoints: create, list, get, update, delete)
 
 ---
 
-## Milestone 3 — Static Analysis
+## Milestone 3 — Uploads Module
+
+Status: Complete
+
+Tasks
+
+- [x] Upload SQLAlchemy model (uploads table, FK, SHA-256, 5 indexes)
+- [x] Upload configuration (UPLOAD_ROOT, MAX_FILE_SIZE_MB, MAX_FILES_PER_REQUEST, ALLOWED_EXTENSIONS, MAX_PROJECT_STORAGE_GB)
+- [x] Storage abstraction layer (StorageProvider ABC + LocalStorageProvider)
+- [x] Upload schemas (UploadResponse, UploadListResponse)
+- [x] Upload repository (5 CRUD functions + project total storage query)
+- [x] Quota service (per-project storage limit enforcement)
+- [x] Upload service (batch upload with rollback, file-first delete, ownership enforcement)
+- [x] Upload routes (4 endpoints: POST/GET project uploads, GET/DELETE single upload)
+- [x] Core dependencies (get_storage_provider, get_quota_service factories)
+- [x] Extended exception hierarchy (FileValidationException, QuotaExceededException, StorageException)
+- [x] Alembic migration (creates uploads table)
+- [x] Removed old upload/ stub
+- [x] Targeted engineering review (removed sha256_hash from response, added logging)
+
+---
+
+## Milestone 4 — Static Analysis
 
 Status: Not Started
 
@@ -125,7 +147,7 @@ Tasks
 
 ---
 
-## Milestone 4 — AI Integration
+## Milestone 5 — AI Integration
 
 Status: Not Started
 
@@ -138,7 +160,7 @@ Tasks
 
 ---
 
-## Milestone 5 — Dashboard
+## Milestone 6 — Dashboard
 
 Status: Not Started
 
@@ -150,7 +172,7 @@ Tasks
 
 ---
 
-## Milestone 6 — Finalization
+## Milestone 7 — Finalization
 
 Status: Not Started
 
@@ -177,17 +199,19 @@ docs/
 backend/
 ├── app/
 │   ├── core/          (config, database, security, exceptions, dependencies)
-│   ├── models/        (User, Project, Analysis, Report)
-│   ├── modules/       (auth, projects, upload, analysis, ai, documentation, modernization, reports)
+│   ├── storage/       (base ABC, LocalStorageProvider)
+│   ├── models/        (User, Project, Upload, Analysis, Report)
+│   ├── modules/       (auth, projects, uploads, analysis, ai, documentation, modernization, reports)
 │   │   ├── auth/      (fully implemented)
 │   │   ├── projects/  (fully implemented)
+│   │   ├── uploads/   (fully implemented — routes, service, schemas, repository, quota)
 │   │   └── */         (scaffolded — routes, service, schemas, repository)
 │   ├── workers/       (placeholder)
 │   ├── integrations/  (placeholder)
 │   └── utils/         (placeholder)
-├── alembic/           (migration environment)
+├── alembic/           (migration environment; 2 migration versions)
 ├── tests/             (conftest + test dirs per module, all empty)
-├── uploads/           (extracted project storage)
+├── uploads/           (file storage per project, mounted as Docker named volume)
 ├── pyproject.toml
 ├── Dockerfile
 └── .env.example
@@ -516,10 +540,97 @@ Next
 
 ---
 
+## Session 10 — 2026-07-26
+
+Completed
+
+- Created M3 Uploads implementation plan with 10 sections (model, config, storage, schemas, repository, quota, service, routes, dependencies, migration)
+- Revised plan per review (10 changes: ALLOWED_EXTENSIONS over ALLOWED_MIME_TYPES, ALLOWED_MIME_TYPES kept as config, timeout removed, upload status made constant, UploadResponse expanded, batch response clarified, quota in routes, FK cascade documented, _get_owned_project duplicated, QuotaService made stateless)
+- Implemented Upload SQLAlchemy model (`app/models/upload.py`) — id, project_id FK, original_name, stored_name, file_path, file_size, mime_type, extension, sha256_hash, status, created_at; 5 indexes including composite (project_id, created_at)
+- Grouped upload config in Settings: UPLOAD_ROOT, MAX_FILE_SIZE_MB (50), MAX_FILES_PER_REQUEST (100), MAX_REQUEST_SIZE_MB (500), ALLOWED_EXTENSIONS, ALLOWED_MIME_TYPES, MAX_PROJECT_STORAGE_GB (5)
+- Created storage abstraction: `app/storage/base.py` (StorageProvider ABC + FileStorageResult TypedDict), `app/storage/local.py` (LocalStorageProvider with UUID hex filenames, per-project subdirs)
+- Created upload schemas: UploadResponse (id, project_id, original_name, file_size, mime_type, extension, sha256_hash, status, created_at), UploadListResponse
+- Created upload repository: `create_upload` (flush), `get_upload_by_id`, `list_uploads_by_project` (DESC), `delete_upload` (flush), `get_project_total_storage` (SUM coalesce)
+- Created QuotaService: `check_storage_quota` reading MAX_PROJECT_STORAGE_GB from settings
+- Created upload service: `upload_files` (validation → hash → quota → storage → batch DB with rollback), `list_uploads`, `get_upload`, `delete_upload` (file-first delete)
+- Created upload routes: 4 endpoints (POST/GET /projects/{id}/uploads, GET/DELETE /uploads/{id})
+- Extended AppException hierarchy: FileValidationException (400), QuotaExceededException (400), StorageException (500)
+- Added DI factories: get_storage_provider(), get_quota_service() in app/core/dependencies.py
+- Registered uploads_router in app/main.py
+- Generated and applied Alembic migration e6da2e749540 (creates uploads table with all columns, FK, 5 indexes)
+- Updated backend/.env and backend/.env.example with new upload settings
+- Removed old modules/upload/ stub directory
+- Conducted targeted engineering review: checked relationships, FK, response models, memory usage, code quality, security
+- Applied 2 fixes: removed sha256_hash from UploadResponse, added logging for rollback cleanup failures
+- Updated all 3 documentation files: API_CONTRACT.md (4 upload endpoint sections), ARCHITECTURE.md (storage layer, Upload model, updated module org/evolution/DI), PROJECT_STATE.md (M3 completion, new milestone structure)
+
+Files Created
+
+- `backend/app/models/upload.py` — Upload SQLAlchemy model
+- `backend/app/storage/__init__.py` — Package init
+- `backend/app/storage/base.py` — StorageProvider ABC + FileStorageResult TypedDict
+- `backend/app/storage/local.py` — LocalStorageProvider implementation
+- `backend/app/modules/uploads/__init__.py` — Package init
+- `backend/app/modules/uploads/schemas.py` — UploadResponse, UploadListResponse
+- `backend/app/modules/uploads/repository.py` — 5 CRUD/query functions
+- `backend/app/modules/uploads/quota.py` — QuotaService
+- `backend/app/modules/uploads/service.py` — Business logic
+- `backend/app/modules/uploads/routes.py` — 4 endpoints
+- `backend/alembic/versions/e6da2e749540_create_uploads_table.py` — Creates uploads table
+
+Files Modified
+
+- `backend/app/core/config.py` — Grouped upload settings
+- `backend/app/core/exceptions.py` — Added FileValidationException, QuotaExceededException, StorageException
+- `backend/app/core/dependencies.py` — Added get_storage_provider, get_quota_service
+- `backend/app/core/database.py` — (no changes needed)
+- `backend/app/models/__init__.py` — Added Upload re-export
+- `backend/app/main.py` — Registered uploads_router
+- `backend/app/.env` — Updated upload settings
+- `backend/.env.example` — Updated upload settings
+- `docs/API_CONTRACT.md` — Added 4 upload endpoint sections, updated metadata
+- `docs/ARCHITECTURE.md` — Added storage layer, Upload model, updated module org/evolution/DI
+- `docs/Legacy2Next_PROJECT_STATE.md` — Session 10, M3 completion, milestone restructuring
+
+Deleted
+
+- `backend/app/modules/upload/` — Old stub replaced by uploads/
+
+Design Decisions
+
+- StorageProvider as ABC enables future cloud storage backends (S3, GCS) without changing service code
+- UUID hex filenames prevent path traversal and name collisions
+- File-first delete strategy (delete from disk before DB record) prevents orphaned DB records
+- Batch commit with rollback: all files in a request succeed or none; partial uploads are cleaned up
+- Per-project storage quota via QuotaService (configurable MAX_PROJECT_STORAGE_GB)
+- SHA-256 hash computed for dedup/integrity but not exposed in API response (post-review)
+- Upload module uses its own `_get_owned_project` helper rather than importing from projects service — keeps each module's ownership enforcement self-contained
+- No SQLAlchemy relationships on Upload or Project models — consistent with existing codebase pattern (explicit queries over ORM navigation)
+- FK cascade intentionally omitted — matches existing projects.user_id FK pattern (no cascade elsewhere)
+
+Validation Changes
+
+- FileValidationException (HTTP 400) for validation failures with explicit codes (EMPTY_FILE, INVALID_FILENAME, INVALID_FILE_TYPE)
+- QuotaExceededException (HTTP 400) for storage limit exceeded
+- StorageException (HTTP 500) for storage layer failures
+- 404 returned for missing or unowned resources (consistent with Projects pattern)
+- No MIME type validation — extension-based validation used as primary defense (MIME is advisory and client-controlled)
+
+Testing Performed
+
+- Python AST parse verified on all new and modified files
+- No runtime testing performed (no test suite executed)
+
+Next
+
+- Analysis module implementation (language detection, framework detection, dependency parsing, file metadata extraction)
+
+---
+
 # Definition of Current State
 
-The project has moved from planning to active development (v0.2.0).
+The project has moved from planning to active development (v0.3.0).
 
-Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 is in progress with 1 of 3 tasks complete (Project CRUD done). The backend has a complete authentication system (register, login, JWT, protected endpoint) and a complete Projects CRUD module (5 endpoints, ownership-scoped). The application is containerized via Docker Compose with PostgreSQL 16 Alpine, and has the initial Alembic migration applied. Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are recorded in `docs/DECISIONS.md`. The HTTP API is documented in `docs/API_CONTRACT.md` covering all 9 implemented endpoints with schemas, validation rules, error codes, and behaviour origins.
+Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete. The backend has a complete authentication system (register, login, JWT, protected endpoint), a complete Projects CRUD module (5 endpoints, ownership-scoped), and a complete Uploads module (4 endpoints, file storage, SHA-256 hashing, per-project quota, batch upload with rollback, storage abstraction layer). The application is containerized via Docker Compose with PostgreSQL 16 Alpine, and has two Alembic migrations applied (5 tables: users, projects, uploads, analyses, reports). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are recorded in `docs/DECISIONS.md`. The HTTP API is documented in `docs/API_CONTRACT.md` covering all 13 implemented endpoints with schemas, validation rules, error codes, and behaviour origins.
 
-The next session should implement the Upload module — the remaining Milestone 2 tasks (ZIP upload, file extraction, project storage).
+The next session should implement the Analysis module — language detection, framework detection, dependency parsing, and file metadata extraction (Milestone 4).

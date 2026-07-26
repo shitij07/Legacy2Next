@@ -28,3 +28,18 @@ class ConflictException(AppException):
 class ValidationException(AppException):
     def __init__(self, message: str):
         super().__init__(code="VALIDATION_ERROR", message=message, status_code=400)
+
+
+class FileValidationException(AppException):
+    def __init__(self, code: str, message: str):
+        super().__init__(code=code, message=message, status_code=400)
+
+
+class QuotaExceededException(AppException):
+    def __init__(self, message: str):
+        super().__init__(code="PROJECT_STORAGE_LIMIT", message=message, status_code=400)
+
+
+class StorageException(AppException):
+    def __init__(self, message: str):
+        super().__init__(code="STORAGE_ERROR", message=message, status_code=500)

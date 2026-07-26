@@ -3,7 +3,7 @@
 **Project:** Legacy2Next
 **Purpose:** Definitive reference for the implemented HTTP API.
 **Version:** 0.2.0
-**Current API Coverage:** 9 endpoints — Health (1) + Authentication (3) + Projects (5)
+**Current API Coverage:** 13 endpoints — Health (1) + Authentication (3) + Projects (5) + Uploads (4)
 **Last Updated:** 2026-07-26
 
 ---
@@ -12,6 +12,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.2 | 2026-07-26 | Added Uploads API (4 endpoints: POST/GET /projects/{project_id}/uploads, GET/DELETE /uploads/{upload_id}) |
 | 1.1 | 2026-07-26 | Added Projects API (5 endpoints: POST/GET/GET-by-id/PATCH/DELETE /projects) |
 | 1.0 | 2026-07-26 | Initial API contract covering Health and Authentication endpoints |
 
@@ -48,7 +49,7 @@ Behaviour explicitly implemented in the codebase:
 - **JWT creation and verification** (`app/core/security.py`): HS256 signing, sub/iat/exp claims, 30-minute expiry.
 - **Password hashing and verification** (`app/core/security.py`): bcrypt via passlib `CryptContext`.
 - **Route-specific status codes**: `POST /auth/register` returns 201; `POST /auth/login` and `GET /auth/me` return 200.
-- **Business logic errors**: `ConflictException` on duplicate email, `UnauthorizedException` on bad credentials or invalid tokens, `NotFoundException` when a project is not found or not owned by the current user, `ValidationException` when a PATCH request contains no fields to update.
+- **Business logic errors**: `ConflictException` on duplicate email, `UnauthorizedException` on bad credentials or invalid tokens, `NotFoundException` when a resource is not found or not owned by the current user, `ValidationException` when a PATCH request contains no fields to update, `FileValidationException` when an upload fails validation (empty file, invalid filename, disallowed extension), `QuotaExceededException` when a project's storage limit is exceeded, `StorageException` when a storage operation fails.
 
 ---
 
@@ -189,7 +190,7 @@ Multiple validation errors can appear in a single response.
 | 200 | Successful response with body | Application |
 | 201 | Resource created | Application |
 | 204 | Resource deleted, no response body | Application |
-| 400 | Business validation failure — no fields provided in PATCH request | Application |
+| 400 | Business validation failure — file validation errors, storage quota exceeded, no fields in PATCH request | Application |
 | 401 | Authentication failure — missing, invalid, or expired credentials | Framework / Application |
 | 404 | Resource not found or not owned by the current user | Application |
 | 409 | Resource conflict — duplicate email on registration | Application |
@@ -211,6 +212,15 @@ Multiple validation errors can appear in a single response.
 | PATCH /projects/{id} | 404 | `PROJECT_NOT_FOUND` | `Project not found` | `projects/service.py:12` |
 | PATCH /projects/{id} | 400 | `VALIDATION_ERROR` | `At least one field must be provided` | `projects/service.py:38` |
 | DELETE /projects/{id} | 404 | `PROJECT_NOT_FOUND` | `Project not found` | `projects/service.py:12` |
+| POST /projects/{id}/uploads | 400 | `EMPTY_FILE` | `At least one file must be provided` or `File '{name}' is empty` | `uploads/service.py:75,93` |
+| POST /projects/{id}/uploads | 400 | `INVALID_FILENAME` | `Filename must not be empty` / `...contain path separators` / `...contain '..'` / `...contain null bytes` | `uploads/service.py:49-59` |
+| POST /projects/{id}/uploads | 400 | `INVALID_FILE_TYPE` | `File type of '{name}' is not allowed` | `uploads/service.py:97-101` |
+| POST /projects/{id}/uploads | 400 | `PROJECT_STORAGE_LIMIT` | `Project storage limit of 5 GB exceeded` | `uploads/quota.py:16` |
+| POST /projects/{id}/uploads | 404 | `PROJECT_NOT_FOUND` | `Project not found` | `uploads/service.py:24` |
+| GET /projects/{id}/uploads | 404 | `PROJECT_NOT_FOUND` | `Project not found` | `uploads/service.py:24` |
+| GET /uploads/{id} | 404 | `PROJECT_NOT_FOUND` | `Upload not found` or project not owned | `uploads/service.py:30,24` |
+| DELETE /uploads/{id} | 404 | `PROJECT_NOT_FOUND` | `Upload not found` or project not owned | `uploads/service.py:30,24` |
+| DELETE /uploads/{id} | 500 | `STORAGE_ERROR` | `Failed to delete upload record after removing file...` | `uploads/service.py:161-164` |
 
 ### Framework Errors
 
@@ -244,8 +254,9 @@ The implemented API covers:
 - User login returning a JWT token
 - Authenticated user profile retrieval
 - Project management: create, list, get by ID, update, and delete projects
+- File upload management: upload files to a project, list project uploads, retrieve a single upload, delete an upload
 
-No other endpoints are implemented outside of health, authentication, and projects. All other feature modules (upload, analysis, AI, documentation, modernization, reports) exist as scaffolded stubs with empty `APIRouter` definitions that are not registered in `app/main.py`.
+No other endpoints are implemented outside of health, authentication, projects, and uploads. All other feature modules (analysis, AI, documentation, modernization, reports) exist as scaffolded stubs with empty `APIRouter` definitions that are not registered in `app/main.py`.
 
 ---
 
@@ -1198,11 +1209,432 @@ No body.
 
 ---
 
+## POST /projects/{project_id}/uploads
+
+### Purpose
+
+Upload one or more files to a project. Files are validated for extension, filename safety, and storage quota. Each file is SHA-256 hashed and stored on disk with a UUID-based filename.
+
+### Authentication
+
+Bearer token required. Obtain a token from `POST /auth/login`.
+
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | Yes | `Bearer <token>` |
+| `Content-Type` | Yes | `multipart/form-data` |
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `project_id` | `int` | The ID of the project to upload files to |
+
+### Query Parameters
+
+None.
+
+### Request Body
+
+The request body is a `multipart/form-data` payload with a `files` field containing one or more file parts.
+
+### Validation Rules
+
+- At least one file must be provided.
+- Each file must have a non-empty filename with no path separators, `..`, or null bytes.
+- Each file's extension must be in the allowed list (`.zip`, `.py`, `.js`, `.ts`, `.java`, `.cs`, `.cpp`, `.h`, `.rb`, `.go`, `.rs`, `.sql`, `.xml`, `.json`, `.yaml`, `.yml`, `.md`, `.txt`, `.cfg`, `.ini`, `.properties`, `.css`, `.html`, `.htm`, `.php`, `.swift`, `.kt`, `.scala`, `.sh`, `.bat`, `.ps1`, `.env`, `.toml`).
+- Each file must be non-empty (0 bytes rejected).
+- The total request size must not exceed 500 MB.
+- The project storage quota must not be exceeded (default: 5 GB per project).
+
+Validation errors return 400 with a structured `AppException` body.
+
+### Success Responses
+
+| Status | Description |
+|--------|-------------|
+| 201 | All files uploaded successfully |
+
+### Error Responses
+
+| Status | Code | Message | Condition |
+|--------|------|---------|-----------|
+| 400 | `EMPTY_FILE` | `At least one file must be provided` | No files in request |
+| 400 | `EMPTY_FILE` | `File '{name}' is empty` | A file is 0 bytes |
+| 400 | `INVALID_FILENAME` | `Filename must not be empty` / `...contain path separators` / `...contain '..'` / `...contain null bytes` | Filename validation failure |
+| 400 | `INVALID_FILE_TYPE` | `File type of '{name}' is not allowed` | File extension not in allowed list |
+| 400 | `PROJECT_STORAGE_LIMIT` | `Project storage limit of 5 GB exceeded` | Upload would exceed the project's storage quota |
+| 401 | — | `Not authenticated` | `Authorization` header is missing or malformed (framework-generated) |
+| 404 | `PROJECT_NOT_FOUND` | `Project not found` | Project does not exist or belongs to another user |
+
+### Response Schema
+
+The response body is a list of `UploadResponse` objects.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `int` | Unique upload identifier |
+| `project_id` | `int` | ID of the owning project |
+| `original_name` | `str` | Original filename as submitted |
+| `file_size` | `int` | File size in bytes |
+| `mime_type` | `str` | MIME type reported by the client |
+| `extension` | `str` | Lowercase file extension (with leading `.`) |
+| `status` | `str` | Upload status (default `"UPLOADED"`) |
+| `created_at` | `datetime` | Timestamp when the upload was recorded |
+
+### Example Request
+
+```
+POST /projects/1/uploads
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: multipart/form-data
+
+--boundary
+Content-Disposition: form-data; name="files"; filename="main.py"
+Content-Type: text/x-python
+
+def hello():
+    print("Hello, World!")
+--boundary--
+```
+
+### Example Responses
+
+**Status:** 201
+
+```json
+[
+  {
+    "id": 1,
+    "project_id": 1,
+    "original_name": "main.py",
+    "file_size": 42,
+    "mime_type": "text/x-python",
+    "extension": ".py",
+    "status": "UPLOADED",
+    "created_at": "2026-07-26T14:00:00"
+  }
+]
+```
+
+**Status:** 400
+
+```json
+{
+  "detail": {
+    "code": "INVALID_FILE_TYPE",
+    "message": "File type of 'evil.exe' is not allowed"
+  }
+}
+```
+
+### Notes
+
+- Files are stored on disk with UUID-based filenames under `<UPLOAD_ROOT>/<project_id>/files/<uuid>.ext`. The original filename is preserved only in the database record.
+- SHA-256 hashes are computed for storage deduplication and integrity verification but are not exposed in the API response.
+- On any failure during the batch upload, all previously stored files in the batch are rolled back (deleted from disk). Partial uploads are not left behind.
+- Route defined at `app/modules/uploads/routes.py:20-41`.
+
+---
+
+## GET /projects/{project_id}/uploads
+
+### Purpose
+
+List all uploads for a given project, ordered by creation date descending.
+
+### Authentication
+
+Bearer token required. Obtain a token from `POST /auth/login`.
+
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | Yes | `Bearer <token>` |
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `project_id` | `int` | The ID of the project |
+
+### Query Parameters
+
+None.
+
+### Request Body
+
+None.
+
+### Validation Rules
+
+Not applicable.
+
+### Success Responses
+
+| Status | Description |
+|--------|-------------|
+| 200 | List of uploads returned successfully |
+
+### Error Responses
+
+| Status | Code | Message | Condition |
+|--------|------|---------|-----------|
+| 401 | — | `Not authenticated` | `Authorization` header is missing or malformed (framework-generated) |
+| 404 | `PROJECT_NOT_FOUND` | `Project not found` | Project does not exist or belongs to another user |
+
+### Response Schema
+
+The response body is an `UploadListResponse` object.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `uploads` | `list[UploadResponse]` | Array of upload objects for the project |
+
+Each upload object follows the `UploadResponse` schema (see POST /projects/{project_id}/uploads).
+
+### Example Request
+
+```
+GET /projects/1/uploads
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### Example Response
+
+**Status:** 200
+
+```json
+{
+  "uploads": [
+    {
+      "id": 2,
+      "project_id": 1,
+      "original_name": "app.js",
+      "file_size": 1024,
+      "mime_type": "application/javascript",
+      "extension": ".js",
+      "status": "UPLOADED",
+      "created_at": "2026-07-26T14:05:00"
+    },
+    {
+      "id": 1,
+      "project_id": 1,
+      "original_name": "main.py",
+      "file_size": 42,
+      "mime_type": "text/x-python",
+      "extension": ".py",
+      "status": "UPLOADED",
+      "created_at": "2026-07-26T14:00:00"
+    }
+  ]
+}
+```
+
+**Status:** 404
+
+```json
+{
+  "detail": {
+    "code": "PROJECT_NOT_FOUND",
+    "message": "Project not found"
+  }
+}
+```
+
+### Notes
+
+- Only uploads belonging to projects owned by the authenticated user are visible.
+- Returned in reverse chronological order (`created_at` descending).
+- Route defined at `app/modules/uploads/routes.py:44-54`.
+
+---
+
+## GET /uploads/{upload_id}
+
+### Purpose
+
+Retrieve metadata for a single upload by ID.
+
+### Authentication
+
+Bearer token required. Obtain a token from `POST /auth/login`.
+
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | Yes | `Bearer <token>` |
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `upload_id` | `int` | The ID of the upload to retrieve |
+
+### Query Parameters
+
+None.
+
+### Request Body
+
+None.
+
+### Validation Rules
+
+Not applicable. Path parameter `upload_id` is automatically parsed as an integer.
+
+### Success Responses
+
+| Status | Description |
+|--------|-------------|
+| 200 | Upload found and returned |
+
+### Error Responses
+
+| Status | Code | Message | Condition |
+|--------|------|---------|-----------|
+| 401 | — | `Not authenticated` | `Authorization` header is missing or malformed (framework-generated) |
+| 404 | `UPLOAD_NOT_FOUND` | `Upload not found` | Upload does not exist or its project belongs to another user |
+
+### Response Schema
+
+The response body is an `UploadResponse` object (see POST /projects/{project_id}/uploads).
+
+### Example Request
+
+```
+GET /uploads/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### Example Responses
+
+**Status:** 200
+
+```json
+{
+  "id": 1,
+  "project_id": 1,
+  "original_name": "main.py",
+  "file_size": 42,
+  "mime_type": "text/x-python",
+  "extension": ".py",
+  "status": "UPLOADED",
+  "created_at": "2026-07-26T14:00:00"
+}
+```
+
+**Status:** 404
+
+```json
+{
+  "detail": {
+    "code": "UPLOAD_NOT_FOUND",
+    "message": "Upload not found"
+  }
+}
+```
+
+### Notes
+
+- Returns 404 both when the upload does not exist and when it exists but belongs to another user's project. No information leakage.
+- Ownership is enforced by checking upload → project → user through the service layer.
+- Route defined at `app/modules/uploads/routes.py:57-66`.
+
+---
+
+## DELETE /uploads/{upload_id}
+
+### Purpose
+
+Delete an upload by ID. The file is removed from disk first, then the database record is deleted.
+
+### Authentication
+
+Bearer token required. Obtain a token from `POST /auth/login`.
+
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | Yes | `Bearer <token>` |
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `upload_id` | `int` | The ID of the upload to delete |
+
+### Query Parameters
+
+None.
+
+### Request Body
+
+None.
+
+### Validation Rules
+
+Not applicable.
+
+### Success Responses
+
+| Status | Description |
+|--------|-------------|
+| 204 | Upload deleted successfully — no response body |
+
+### Error Responses
+
+| Status | Code | Message | Condition |
+|--------|------|---------|-----------|
+| 401 | — | `Not authenticated` | `Authorization` header is missing or malformed (framework-generated) |
+| 404 | `UPLOAD_NOT_FOUND` | `Upload not found` | Upload does not exist or its project belongs to another user |
+| 500 | `STORAGE_ERROR` | `Failed to delete upload record after removing file...` | Database commit fails after file deletion |
+
+### Response Schema
+
+No response body on success (HTTP 204).
+
+### Example Request
+
+```
+DELETE /uploads/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### Example Responses
+
+**Status:** 204
+
+No body.
+
+**Status:** 404
+
+```json
+{
+  "detail": {
+    "code": "UPLOAD_NOT_FOUND",
+    "message": "Upload not found"
+  }
+}
+```
+
+### Notes
+
+- The file is deleted from disk before the database record. If the DB commit fails, the file is already deleted — a `STORAGE_ERROR` is returned (HTTP 500) and the upload record may be orphaned.
+- Ownership is enforced through the same chain as GET (upload → project → user).
+- Route defined at `app/modules/uploads/routes.py:69-79`.
+
+---
+
 # Future Endpoints
 
 The following API areas are planned for future milestones. No routes, schemas, or implementation details are defined yet.
 
-- Upload API — Planned
 - Analysis API — Planned
 - AI API — Planned
 - Documentation API — Planned

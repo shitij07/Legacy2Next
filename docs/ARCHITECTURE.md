@@ -2,7 +2,7 @@
 
 # Legacy2Next — Architecture
 
-> **Version:** 0.2.0
+> **Version:** 0.3.0
 >
 > **Status:** Implemented sections reflect the current repository. Planned sections describe upcoming milestones.
 >
@@ -16,9 +16,9 @@
 
 ## Project Overview
 
-Legacy2Next is a FastAPI backend for legacy software analysis and modernization. At v0.2.0 the backend has a complete authentication system, a Projects CRUD module with ownership scoping, a PostgreSQL database with Alembic migrations, Docker Compose orchestration, and eight feature modules with a consistent routes/service/schemas/repository structure. The auth and projects modules are fully implemented; the remaining modules are stubs awaiting their milestone.
+Legacy2Next is a FastAPI backend for legacy software analysis and modernization. At v0.3.0 the backend has a complete authentication system, a Projects CRUD module with ownership scoping, an Uploads module with file storage and quota management, a PostgreSQL database with Alembic migrations, Docker Compose orchestration, and a storage abstraction layer. The auth, projects, and uploads modules are fully implemented; the remaining modules are stubs awaiting their milestone.
 
-**Phase:** Development (Milestone 2 — Project Management, 1/3 tasks complete).
+**Phase:** Development (Milestone 3 — Uploads Module complete).
 
 **What exists today:**
 
@@ -26,15 +26,17 @@ Legacy2Next is a FastAPI backend for legacy software analysis and modernization.
 |---|---|
 | FastAPI application factory (`app/main.py`) | Implemented |
 | Core layer (config, database, security, exceptions, dependencies) | Implemented |
+| Storage abstraction layer (`app/storage/`) | Implemented |
 | Authentication module (register, login, JWT, /me) | Implemented |
 | Projects module (5 CRUD endpoints, ownership-scoped) | Implemented |
-| SQLAlchemy models (User, Project, Analysis, Report) | Implemented |
-| Alembic migration (4 tables, FKs, indexes) | Implemented |
+| Uploads module (4 endpoints, file storage, quota, hash dedup) | Implemented |
+| SQLAlchemy models (User, Project, Upload, Analysis, Report) | Implemented |
+| Alembic migration (5 tables, FKs, indexes) | Implemented |
 | Docker Compose (PostgreSQL 16 Alpine + FastAPI) | Implemented |
 | Dockerfile (python:3.12-slim, pip install) | Implemented |
 | pyproject.toml (PEP 621, uv-compatible) | Implemented |
 | Test scaffolding (pytest, TestClient, 8 test directories) | Scaffolded |
-| 6 non-auth modules (upload, analysis, ai, documentation, modernization, reports) | Scaffolded — routes/services/schemas/repository stubs |
+| 5 remaining modules (analysis, ai, documentation, modernization, reports) | Scaffolded — routes/services/schemas/repository stubs |
 | Frontend (React + TypeScript + Vite) | Not initialized |
 | Background workers, integrations | Placeholder directories |
 
@@ -52,19 +54,24 @@ backend/
 │   │   ├── config.py                    # Settings via pydantic-settings (env file support)
 │   │   ├── database.py                  # SQLAlchemy engine, sessionmaker, Base, get_db generator
 │   │   ├── security.py                  # hash_password, verify_password, create/decode JWT
-│   │   ├── exceptions.py                # AppException hierarchy (NotFound, Unauthorized, Conflict)
-│   │   └── dependencies.py              # get_current_user (OAuth2PasswordBearer + token decode)
+│   │   ├── exceptions.py                # AppException hierarchy (NotFound, Unauthorized, Conflict, FileValidation, QuotaExceeded, Storage)
+│   │   └── dependencies.py              # get_current_user, get_storage_provider, get_quota_service
+│   ├── storage/
+│   │   ├── __init__.py
+│   │   ├── base.py                      # StorageProvider ABC + FileStorageResult TypedDict
+│   │   └── local.py                     # LocalStorageProvider (UUID filenames, per-project subdirs)
 │   ├── models/
-│   │   ├── __init__.py                  # Re-exports User, Project, Analysis, Report
+│   │   ├── __init__.py                  # Re-exports User, Project, Upload, Analysis, Report
 │   │   ├── user.py                      # users table
 │   │   ├── project.py                   # projects table (FK → users)
+│   │   ├── upload.py                    # uploads table (FK → projects, SHA-256 hash, 5 indexes)
 │   │   ├── analysis.py                  # analyses table (FK → projects)
 │   │   └── report.py                    # reports table (FK → projects)
 │   ├── modules/
 │   │   ├── __init__.py
 │   │   ├── auth/                        # Fully implemented (routes, service, schemas, repository)
 │   │   ├── projects/                    # Fully implemented (routes, service, schemas, repository)
-│   │   ├── upload/                      # Scaffolded (no schemas.py)
+│   │   ├── uploads/                     # Fully implemented (routes, service, schemas, repository, quota)
 │   │   ├── analysis/                    # Scaffolded (+ detectors/ subdirectory stubs)
 │   │   ├── ai/                          # Scaffolded
 │   │   ├── documentation/               # Scaffolded (+ generators/ subdirectory stubs)
@@ -78,13 +85,14 @@ backend/
 │   ├── env.py                           # Autogenerate support, imports Base from app.models
 │   ├── script.py.mako                   # Migration template
 │   └── versions/
-│       └── b1a1677bc7ef_initial_migration.py  # Creates users, projects, analyses, reports
+│       ├── b1a1677bc7ef_initial_migration.py  # Creates users, projects, analyses, reports
+│       └── e6da2e749540_create_uploads_table.py  # Creates uploads table (FK to projects, SHA-256, 5 indexes)
 ├── tests/
 │   ├── __init__.py
 │   ├── conftest.py                      # TestClient fixture
 │   ├── test_auth/                       # Empty __init__.py
 │   ├── test_projects/                   # Empty __init__.py
-│   ├── test_upload/                     # Empty __init__.py
+│   ├── test_uploads/                    # Empty __init__.py
 │   ├── test_analysis/                   # Empty __init__.py
 │   ├── test_ai/                         # Empty __init__.py
 │   ├── test_documentation/              # Empty __init__.py
@@ -109,7 +117,7 @@ module_name/
 └── repository.py      # SQLAlchemy queries (data access)
 ```
 
-The `upload` module is the only exception — it has no `schemas.py` yet. The `analysis` and `documentation` modules each contain an extra subdirectory (`detectors/`, `generators/`) for future pluggable analysis strategies and document generators.
+The `analysis` and `documentation` modules each contain an extra subdirectory (`detectors/`, `generators/`) for future pluggable analysis strategies and document generators.
 
 ---
 
@@ -139,7 +147,7 @@ Every request follows a four-layer path through the backend:
 
 - **Database** (`app/core/database.py`): Engine configuration (connection pooling, echo), `SessionLocal` factory, `get_db` generator for dependency injection, `declarative_base` for model definitions.
 
-**The auth and projects modules have all four layers implemented.** All other modules have empty or minimal stubs at every layer (e.g., `routes.py` contains only `router = APIRouter(...)`, `service.py` contains only imports).
+**The auth, projects, and uploads modules have all four layers implemented.** The uploads module additionally implements a `quota.py` service for storage quota enforcement. All other modules have empty or minimal stubs at every layer (e.g., `routes.py` contains only `router = APIRouter(...)`, `service.py` contains only imports).
 
 ---
 
@@ -176,6 +184,10 @@ Step 4 applies differently per endpoint:
 - `GET /projects/{project_id}` — injects `project_id` + `current_user` + `db`
 - `PATCH /projects/{project_id}` — injects `project_id` + `body` + `current_user` + `db`
 - `DELETE /projects/{project_id}` — injects `project_id` + `current_user` + `db`
+- `POST /projects/{project_id}/uploads` — injects `files` (multipart) + `project_id` + `current_user` + `db` + `provider` + `quota_service`
+- `GET /projects/{project_id}/uploads` — injects `project_id` + `current_user` + `db`
+- `GET /uploads/{upload_id}` — injects `upload_id` + `current_user` + `db`
+- `DELETE /uploads/{upload_id}` — injects `upload_id` + `current_user` + `db` + `provider`
 
 ---
 
@@ -186,7 +198,9 @@ The DI container is managed entirely by FastAPI's `Depends()` mechanism.
 | Dependency | Location | Used By |
 |---|---|---|
 | `get_db` — yields SQLAlchemy `Session` | `app/core/database.py:17` | All route handlers that need DB access |
-| `get_current_user` — returns `User` from JWT token | `app/core/dependencies.py:11` | All protected endpoints: `GET /auth/me`, all `/projects/*` endpoints |
+| `get_current_user` — returns `User` from JWT token | `app/core/dependencies.py:14` | All protected endpoints: `GET /auth/me`, `/projects/*`, `/uploads/*` |
+| `get_storage_provider` — returns `LocalStorageProvider` | `app/core/dependencies.py:18` | Upload endpoints: `POST /projects/{id}/uploads`, `DELETE /uploads/{id}` |
+| `get_quota_service` — returns `QuotaService` | `app/core/dependencies.py:22` | Upload endpoint: `POST /projects/{id}/uploads` |
 
 **`get_db` lifecycle:** A session is created at the start of each request and closed in the `finally` block of the generator. FastAPI handles the dependency lifecycle per request — no manual session management is required in route handlers.
 
@@ -303,16 +317,18 @@ get_db() → yields Session per request
 ```mermaid
 erDiagram
     User ||--o{ Project : owns
+    Project ||--o{ Upload : has
     Project ||--o{ Analysis : has
     Project ||--o{ Report : has
 ```
 
 - **User** — authenticated account (email, password_hash, name, timestamps)
 - **Project** — uploaded legacy project owned by a User (name, description, language, framework, file_count, status, timestamps)
+- **Upload** — file uploaded to a Project (original_name, stored_name, file_path, file_size, mime_type, extension, sha256_hash, status, timestamps)
 - **Analysis** — static analysis run on a Project (status, created_at)
 - **Report** — generated report for a Project (created_at)
 
-All entities share a common pattern: integer primary key, server-default `created_at` timestamp, and a foreign key ownership chain: User → Projects → Analyses/Reports.
+All entities share a common pattern: integer primary key, server-default `created_at` timestamp, and a foreign key ownership chain: User → Projects → Uploads/Analyses/Reports.
 
 ### Migration strategy
 
@@ -381,10 +397,13 @@ AppException (HTTPException)
 └── detail: {"code": str, "message": str}
 
 Concrete subclasses:
-├── NotFoundException      → 404, code="{ENTITY}_NOT_FOUND"
-├── UnauthorizedException  → 401, code="UNAUTHORIZED"
-├── ConflictException      → 409, code=explicit
-└── ValidationException    → 400, code="VALIDATION_ERROR"
+├── NotFoundException          → 404, code="{ENTITY}_NOT_FOUND"
+├── UnauthorizedException      → 401, code="UNAUTHORIZED"
+├── ConflictException          → 409, code=explicit
+├── ValidationException        → 400, code="VALIDATION_ERROR"
+├── FileValidationException    → 400, code=explicit
+├── QuotaExceededException     → 400, code="PROJECT_STORAGE_LIMIT"
+└── StorageException           → 500, code="STORAGE_ERROR"
 ```
 
 - All exceptions inherit from `fastapi.HTTPException` so FastAPI handles them natively — no custom middleware or exception handlers are registered
@@ -396,6 +415,15 @@ Concrete subclasses:
 - Used in `projects/service.py`:
   - `NotFoundException("Project")` when project not found or not owned (404)
   - `ValidationException("At least one field must be provided")` on empty PATCH body (400)
+- Used in `uploads/service.py`:
+  - `NotFoundException("Project")` when project not found or not owned (404)
+  - `NotFoundException("Upload")` when upload not found (404)
+  - `FileValidationException("EMPTY_FILE", ...)` on no files or empty files (400)
+  - `FileValidationException("INVALID_FILENAME", ...)` on path separators, `..`, or null bytes (400)
+  - `FileValidationException("INVALID_FILE_TYPE", ...)` on disallowed extension (400)
+  - `StorageException(...)` when DB deletion fails after file removal (500)
+- Used in `uploads/quota.py`:
+  - `QuotaExceededException(...)` when project storage limit exceeded (400)
 
 ---
 
@@ -423,6 +451,20 @@ Concrete subclasses:
 
 ---
 
+### Uploads module (fully implemented)
+
+| File | Responsibility |
+|---|---|
+| `routes.py` | 4 endpoints: POST `/projects/{id}/uploads` (201), GET `/projects/{id}/uploads` (200), GET `/uploads/{id}` (200), DELETE `/uploads/{id}` (204) |
+| `schemas.py` | `UploadResponse` (id, project_id, original_name, file_size, mime_type, extension, status, created_at), `UploadListResponse` (wraps list) |
+| `service.py` | `upload_files`: validate filenames/extensions → check dimensions → hash content → save to storage → create DB records with batch rollback; `list_uploads`: project ownership check → list; `get_upload`: ownership check → return; `delete_upload`: ownership check → delete file first → delete DB record. Uses `_get_owned_project` and `_get_owned_upload` helpers for ownership enforcement. |
+| `repository.py` | `create_upload`, `get_upload_by_id`, `list_uploads_by_project`, `delete_upload`, `get_project_total_storage` — all ORM-object interfaces |
+| `quota.py` | `QuotaService.check_storage_quota`: reads `MAX_PROJECT_STORAGE_GB` from settings, compares current project usage + incoming bytes against limit |
+
+**Storage layer** (`app/storage/`): `StorageProvider` ABC with `save`, `delete`, `full_path`, `exists` methods. `LocalStorageProvider` implements disk storage with UUID hex filenames under `<UPLOAD_ROOT>/<project_id>/files/`.
+
+---
+
 # Planned
 
 ---
@@ -435,14 +477,13 @@ A React + TypeScript + Vite + TailwindCSS application will be initialized in the
 
 | Module | Status |
 |---|---|
-| **Upload** | Planned (not yet implemented). Module scaffolded — routes, service, repository stubs exist; `schemas.py` is missing. |
 | **Analysis** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist; `detectors/` subdirectory present with 3 empty files (language, framework, dependency). |
 | **AI** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
 | **Documentation** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist; `generators/` subdirectory present but empty. |
 | **Modernization** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
 | **Reports** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
 
-All planned modules will be implemented in milestone order: Upload in M2, Analysis in M3, AI in M4, Documentation/Modernization/Reports in M5.
+Uploads (M3) is now complete. Remaining modules will be implemented in milestone order: Analysis in M4, AI in M5, Documentation/Modernization/Reports in M6.
 
 ## Database Schema Expansion
 
@@ -463,7 +504,7 @@ All planned modules will be implemented in milestone order: Upload in M2, Analys
 
 ## Architecture Evolution
 
-### Current Milestone — Milestone 2
+### Current Milestone — Milestone 4
 
 ```
                                                                    ┌──────────────┐
@@ -475,8 +516,8 @@ All planned modules will be implemented in milestone order: Upload in M2, Analys
 ┌──────────┐     ┌──────────────────────────────────────────────────────────┐
 │  Client   │────▶                    FastAPI Backend                       │
 │ (curl/   │     ├──────────┬──────────┬──────────┬──────────┬─────────────┤
-│  Swagger)│     │  Core    │   Auth   │ Project  │ Upload   │  Analysis   │
-└──────────┘     │  Layer   │   ✅     │   ✅     │ (stub)   │  (stub)     │
+│  Swagger)│     │  Core    │   Auth   │ Project  │ Uploads  │  Analysis   │
+└──────────┘     │  Layer   │   ✅     │   ✅     │   ✅     │  (stub)     │
                  ├──────────┤          │          │          ├─────────────┤
                  │ Config   │          │          │          │   AI        │
                  │ Database │          │          │          │  (stub)     │
@@ -487,8 +528,9 @@ All planned modules will be implemented in milestone order: Upload in M2, Analys
                  │ Models   │          │          │          │ Modernization│
                  │ (User,   │          │          │          │  (stub)     │
                  │ Project, │          │          │          ├─────────────┤
-                 │ Analysis,│          │          │          │  Reports    │
-                 │ Report)  │          │          │          │  (stub)     │
+                 │ Upload,  │          │          │          │  Reports    │
+                 │ Analysis,│          │          │          │  (stub)     │
+                 │ Report)  │          │          │          │             │
                  └──────────┴──────────┴──────────┴──────────┴─────────────┘
                       │
                       ▼
@@ -502,8 +544,7 @@ All planned modules will be implemented in milestone order: Upload in M2, Analys
 
 ### Next Milestones
 
-- **M2 (Project Management):** Remaining tasks: ZIP upload, file extraction, project storage in `uploads/` directory
-- **M3 (Static Analysis):** Implement `analysis` module — language detection, framework detection, dependency parsing, file metadata extraction
-- **M4 (AI Integration):** Implement `ai` module — AI-powered project summary, file explanation, documentation generation, recommendations
-- **M5 (Dashboard):** Implement `reports` and `documentation` modules — dashboard endpoints, report generation, documentation viewer, modernization suggestions
-- **M6 (Finalization):** Testing, bug fixes, deployment configuration, remaining documentation
+- **M4 (Static Analysis):** Implement `analysis` module — language detection, framework detection, dependency parsing, file metadata extraction
+- **M5 (AI Integration):** Implement `ai` module — AI-powered project summary, file explanation, documentation generation, recommendations
+- **M6 (Dashboard):** Implement `reports` and `documentation` modules — dashboard endpoints, report generation, documentation viewer, modernization suggestions
+- **M7 (Finalization):** Testing, bug fixes, deployment configuration, remaining documentation
