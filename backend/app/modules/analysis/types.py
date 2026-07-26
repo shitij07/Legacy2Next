@@ -23,7 +23,7 @@ class DetectedDependency:
 @dataclass(frozen=True)
 class DetectedMetric:
     key: str
-    value: int
+    value: int | str
 
 
 @dataclass(frozen=True)

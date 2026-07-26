@@ -111,6 +111,43 @@ backend/
 └── .env.example                         # All config keys with default values
 ```
 
+### MetricsCollector — Aggregation Stage
+
+`MetricsCollector` is a pure aggregation component that computes project-level metrics from detector outputs. It is NOT a `BaseDetector` subclass — it reads `AnalysisResults`, not `DiscoveryContext`.
+
+```
+MetricsCollector
+├── collect(results: AnalysisResults) → DetectorResult
+│   ├── project.total_files
+│   ├── project.total_file_size
+│   ├── languages.count
+│   ├── languages.primary
+│   ├── frameworks.count
+│   ├── dependencies.count
+│   ├── dependencies.<ecosystem>  (dynamic, per ecosystem)
+│   └── manifests.count
+├── Zero I/O — no filesystem, no database, no network
+├── O(n) in detector output size
+├── Deterministic — same input → same output, stable ordering
+└── Never mutates AnalysisResults
+```
+
+Fixed metric keys are defined in `metric_keys.py` as a `MetricKey(StrEnum)`:
+```python
+class MetricKey(StrEnum):
+    PROJECT_TOTAL_FILES = "project.total_files"
+    PROJECT_TOTAL_FILE_SIZE = "project.total_file_size"
+    LANGUAGE_COUNT = "languages.count"
+    PRIMARY_LANGUAGE = "languages.primary"
+    FRAMEWORK_COUNT = "frameworks.count"
+    DEPENDENCY_COUNT = "dependencies.count"
+    MANIFEST_COUNT = "manifests.count"
+```
+
+Dynamic ecosystem keys follow the pattern `f"dependencies.{ecosystem}"`.
+
+`DetectedMetric.value` supports `int | str` (widened from `int` in M4.6B) to accommodate string-valued metrics like `languages.primary = "Python"`.
+
 ### Module-internal convention
 
 Every module under `modules/` follows a consistent file layout:
@@ -484,7 +521,7 @@ A React + TypeScript + Vite + TailwindCSS application will be initialized in the
 
 | Module | Status |
 |---|---|
-| **Analysis** | In progress. Discovery Engine (FileGraph, IgnoreRules, DiscoveryEngine) and Detector Framework (BaseDetector, LanguageDetector, FrameworkDetector, DependencyDetector, extension→language mapping) implemented. Routes, service, schemas, repository stubs exist. Remaining: MetricsCollector and AnalysisWriter to be implemented. |
+| **Analysis** | In progress. Discovery Engine (FileGraph, IgnoreRules, DiscoveryEngine), Detector Framework (BaseDetector, LanguageDetector, FrameworkDetector, DependencyDetector, extension→language mapping), and MetricsCollector implemented. Routes, service, schemas, repository stubs exist. Remaining: AnalysisWriter and pipeline orchestration. |
 | **AI** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
 | **Documentation** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist; `generators/` subdirectory present but empty. |
 | **Modernization** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
@@ -551,8 +588,7 @@ Uploads (M3) is now complete. Remaining modules will be implemented in milestone
 
 ### Next Milestones
 
-- **M4.4 (Remaining Detectors):** MetricsCollector
-- **M4.5 (AnalysisWriter & Pipeline):** Pipeline orchestration, AnalysisService integration, database persistence
+- **M4.7 (AnalysisWriter & Pipeline):** Pipeline orchestration, AnalysisService integration, database persistence
 - **M5 (AI Integration):** Implement `ai` module — AI-powered project summary, file explanation, documentation generation, recommendations
 - **M6 (Dashboard):** Implement `reports` and `documentation` modules — dashboard endpoints, report generation, documentation viewer, modernization suggestions
 - **M7 (Finalization):** Testing, bug fixes, deployment configuration, remaining documentation

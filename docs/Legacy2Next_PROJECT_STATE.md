@@ -34,20 +34,19 @@ Last Updated: 2026-07-26
 
 # Current Goal
 
-Complete Milestone 4 — Static Analysis by implementing the remaining detectors (DependencyDetector, MetricsCollector, AnalysisWriter) and service integration.
+Complete Milestone 4 — Static Analysis by implementing AnalysisWriter and service integration.
 
 ---
 
 # Current Task
 
-- MetricsCollector implementation (M4.4)
 - AnalysisWriter / persistence (M4.5)
 
 ---
 
 # Current Focus
 
-The current priority is completing the remaining detectors (FrameworkDetector, DependencyDetector, MetricsCollector) and wiring them into the analysis pipeline with persistence.
+The current priority is implementing the AnalysisWriter for database persistence and pipeline orchestration.
 
 ---
 
@@ -70,12 +69,13 @@ The current priority is completing the remaining detectors (FrameworkDetector, D
 - M4.3B Detector Framework + LanguageDetector: `base.py` (BaseDetector ABC with detect, read_text, logger, detector_name), `types.py` extended (DetectorResult, AnalysisResults, DetectedTechnology, DetectedDependency, DetectedFile, DetectedMetric), `utils.py` (extension→language mapping covering 90+ extensions), `language_detector.py` (LanguageDetector — extension-based language classification, aggregate counts, DetectedFile enrichment), 48 new tests (69 total in test_analysis), all pass
 - M4.3B FrameworkDetector: `framework_detector.py` (EvidenceRule hierarchy: JsonDependencyRule, XmlDependencyRule, TomlDependencyRule, LineDependencyRule, FileExistsRule; FrameworkDefinition with 32 definitions across 4 categories; FrameworkDetector with two-phase design, confidence merging, deduplication), `test_framework_detector.py` (45 tests covering all rule types, framework detection, edge cases), all 114 tests in test_analysis pass
 - M4.5B DependencyDetector: `dependency_detector.py` (closed ManifestParser hierarchy with 9 parsers: PackageJsonParser, RequirementsParser, PyProjectParser, PomParser, GradleParser, CargoParser, ComposerParser, GemfileParser, CsProjParser; _RawDependency intermediate model; _PARSER_REGISTRY data-driven dict; _merge_deduplicate with version conflict warning; canonical category mapping; graceful degradation), `DetectedDependency` updated (source_files tuple, category field), `test_dependency_detector.py` (93 tests across 12 test classes covering all parsers, registry, dedup, integration), all 207 tests in test_analysis pass
+- M4.6B MetricsCollector: `metrics_collector.py` (single `MetricsCollector` class with private helpers, pure aggregation from `AnalysisResults` only, zero I/O, deterministic output), `metric_keys.py` (`MetricKey(StrEnum)` with 7 stable constants, dynamic `dependencies.<ecosystem>` keys), `DetectedMetric.value` widened from `int` to `int | str` to support string metrics like `primary_language`, `test_metrics_collector.py` (51 tests across 14 test classes covering empty results, file counts, language counting, primary language with alphabetical tie-breaking, framework counting, dependency counting, ecosystem grouping, manifest counting, determinism, result integrity, integration, MetricKey enum), all 258 tests in test_analysis pass
 
 ---
 
 # In Progress
 
-Milestone 4 — Static Analysis (M4 infrastructure, discovery, detector framework, LanguageDetector, FrameworkDetector, DependencyDetector complete)
+Milestone 4 — Static Analysis (M4 infrastructure, discovery, detector framework, LanguageDetector, FrameworkDetector, DependencyDetector, MetricsCollector complete)
 
 ---
 
@@ -87,8 +87,7 @@ None.
 
 # Next Tasks
 
-1. Implement MetricsCollector (file metrics, lines of code, complexity)
-2. Implement AnalysisWriter and pipeline orchestration
+1. Implement AnalysisWriter and pipeline orchestration
 
 ---
 
@@ -160,21 +159,33 @@ Status: In Progress
 - [x] discovery.py (DiscoveryEngine, deterministic os.walk traversal, error resilience)
 - [x] 21 tests passing
 
-### M4.3 — Detector Framework & Detectors
+### M4.3 — Detector Framework & LanguageDetector
 
 - [x] base.py (BaseDetector ABC with detect, read_text, logger, detector_name)
 - [x] types.py extended (DetectorResult, AnalysisResults, DetectedTechnology, DetectedDependency, DetectedFile, DetectedMetric)
 - [x] utils.py (extension→language mapping covering 90+ extensions)
 - [x] language_detector.py (LanguageDetector — extension classification, aggregation, DetectedFile enrichment)
-- [x] framework_detector.py (FrameworkDetector — EvidenceRule hierarchy, 32 FrameworkDefinitions, two-phase design)
-- [x] dependency_detector.py (DependencyDetector — 9 parsers, closed hierarchy, canonical categories, dedup)
-- [x] 186 tests passing (207 total in test_analysis)
+- [x] 48 tests passing
 
-### M4.4 — Remaining Detectors
+### M4.4 — FrameworkDetector
 
-- [ ] MetricsCollector
+- [x] framework_detector.py (EvidenceRule hierarchy, 32 FrameworkDefinitions, two-phase design)
+- [x] 45 tests passing
 
-### M4.5 — AnalysisWriter & Pipeline
+### M4.5 — DependencyDetector
+
+- [x] dependency_detector.py (9 parsers, closed hierarchy, canonical categories, dedup)
+- [x] DetectedDependency updated (source_files tuple, category field)
+- [x] 93 tests passing (207 total in test_analysis)
+
+### M4.6 — MetricsCollector
+
+- [x] metrics_collector.py (pure aggregation from AnalysisResults, zero I/O, deterministic)
+- [x] metric_keys.py (MetricKey StrEnum with 7 stable constants)
+- [x] DetectedMetric.value widened from int to int | str
+- [x] 51 tests passing (258 total in test_analysis)
+
+### M4.7 — AnalysisWriter & Pipeline
 
 - [ ] Pipeline orchestration
 - [ ] AnalysisService integration
@@ -790,12 +801,59 @@ Next
 
 - MetricsCollector implementation (file metrics, lines of code)
 
+---
+
+## Session 14 — 2026-07-26
+
+Completed
+
+- Implemented MetricsCollector (`backend/app/modules/analysis/metrics_collector.py`) — single MetricsCollector class with private helper methods, pure aggregation from AnalysisResults only, zero I/O, deterministic output
+- Created MetricKey StrEnum (`backend/app/modules/analysis/metric_keys.py`) — stable constants for 7 fixed metric keys (PROJECT_TOTAL_FILES, PROJECT_TOTAL_FILE_SIZE, LANGUAGE_COUNT, PRIMARY_LANGUAGE, FRAMEWORK_COUNT, DEPENDENCY_COUNT, MANIFEST_COUNT); dynamic ecosystem keys use f-strings
+- Widened DetectedMetric.value from int to int | str in types.py — accommodates string-valued metrics like languages.primary
+- Implemented 8 metric groups: project.total_files, project.total_file_size, languages.count, languages.primary (with alphabetical tie-breaking), frameworks.count, dependencies.count, dependencies.<ecosystem> (sorted), manifests.count
+- Created 51 comprehensive tests across 14 test classes: empty results, single/multiple files, file counts, file sizes, language counting, primary language (with tie-breaking edge cases), framework counting, dependency counting, ecosystem grouping (alphabetical order, missing ecosystem fallback to "unknown"), manifest counting (case-insensitive filenames, .csproj extension), determinism (ordering, values, repeated execution), result integrity (metrics-only, detector name, immutability of AnalysisResults), full project integration, multiple detector results aggregation, MetricKey enum validation
+- Updated ARCHITECTURE.md — added MetricsCollector aggregation stage section, updated analysis module status, updated architecture evolution
+- Updated Legacy2Next_PROJECT_STATE.md — M4.4 complete, next tasks focused on AnalysisWriter
+- Created CHANGELOG.md — documented M4.6B changes
+
+Files Created
+
+- `backend/app/modules/analysis/metrics_collector.py` — MetricsCollector class
+- `backend/app/modules/analysis/metric_keys.py` — MetricKey(StrEnum)
+- `backend/tests/test_analysis/test_metrics_collector.py` — 51 tests
+- `docs/CHANGELOG.md` — Changelog
+
+Files Modified
+
+- `backend/app/modules/analysis/types.py` — DetectedMetric.value: int → int | str
+- `docs/ARCHITECTURE.md` — MetricsCollector section, analysis status, evolution
+- `docs/Legacy2Next_PROJECT_STATE.md` — Session 14, M4.4 complete, milestones, current state
+
+Testing Performed
+
+- 258 tests in test_analysis: 51 new metrics collector tests + 207 existing tests, all passing
+
+Architecture Decisions
+
+- MetricsCollector is NOT a BaseDetector subclass — it reads AnalysisResults, not DiscoveryContext
+- Single class with private helper methods over calculator hierarchy — every metric is 1–3 lines of direct Python
+- MetricKey StrEnum for fixed keys prevents typos (autocomplete, NameError on rename); dynamic ecosystem keys remain raw f-strings
+- DetectedMetric.value widened to int | str — minimal change, no new fields, no new types
+- Manifest detection reuses existing DetectedFile metadata (file_name/extension) — no file system access
+- Missing ecosystem falls back to "unknown" to avoid silent data loss
+- Case-insensitive manifest filename matching handles case variations (Gemfile, gemfile)
+- Alphabetical tie-breaking for primary language ensures deterministic output (simpler than confidence-based ordering)
+
+Next
+
+- AnalysisWriter implementation and pipeline orchestration
+
 # Definition of Current State
 
 The project has reached v0.4.0 with Milestone 4 (Static Analysis) actively in progress.
 
-Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete. Milestone 4 is in progress: M4.1 Infrastructure (models, migration, repository) complete, M4.2 Discovery Engine (FileGraph, IgnoreRules, DiscoveryEngine) complete, M4.3 Detector Framework + LanguageDetector + FrameworkDetector + DependencyDetector complete. Remaining: MetricsCollector, AnalysisWriter, pipeline orchestration.
+Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete. Milestone 4 is in progress: M4.1 Infrastructure complete, M4.2 Discovery Engine complete, M4.3 Detector Framework & LanguageDetector complete, M4.4 FrameworkDetector complete, M4.5 DependencyDetector complete, M4.6 MetricsCollector complete. Remaining: M4.7 AnalysisWriter & pipeline orchestration.
 
-The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), Discovery Engine (os.walk with deterministic sorting, ignore rules, FileGraph), Detector Framework (BaseDetector ABC, LanguageDetector, FrameworkDetector, DependencyDetector), and extension→language mapping. The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 tables + 5 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
+The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), Discovery Engine (os.walk with deterministic sorting, ignore rules, FileGraph), Detector Framework (BaseDetector ABC, LanguageDetector, FrameworkDetector, DependencyDetector), MetricsCollector (pure aggregation from AnalysisResults), and extension→language mapping. The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 tables + 5 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
 
-The next session should implement MetricsCollector followed by AnalysisWriter and pipeline orchestration.
+The next session should implement AnalysisWriter and pipeline orchestration.
