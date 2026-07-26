@@ -34,13 +34,12 @@ Last Updated: 2026-07-26
 
 # Current Goal
 
-Complete Milestone 4 — Static Analysis by implementing the detector pipeline (FrameworkDetector, DependencyDetector, MetricsCollector, AnalysisWriter) and service integration.
+Complete Milestone 4 — Static Analysis by implementing the remaining detectors (DependencyDetector, MetricsCollector, AnalysisWriter) and service integration.
 
 ---
 
 # Current Task
 
-- FrameworkDetector implementation (M4.4)
 - DependencyDetector implementation (M4.4)
 - MetricsCollector implementation (M4.4)
 - AnalysisWriter / persistence (M4.5)
@@ -70,12 +69,13 @@ The current priority is completing the remaining detectors (FrameworkDetector, D
 - M4.1 Infrastructure: Analysis model updated (upload_id FK, error_detail, completed_at), 6 new models (Technology, AnalysisTechnology, AnalysisFile, Dependency, Metric), Alembic migration (3f88aa8a120f) with explicit FK naming, repository skeleton with 20 methods, `update_analysis()` removed per immutability requirement, minor `set_metric` fix applied
 - M4.2 Discovery Engine: `types.py` (FileNode, DirectoryNode, FileGraph with hybrid representation, DiscoveryContext, DiscoveryStats), `ignore_rules.py` (IgnoreRules with 4 match strategies, 12 default dirs, 2 files, 2 globs), `discovery.py` (DiscoveryEngine with os.walk traversal, deterministic sorting, error resilience), 21 tests
 - M4.3B Detector Framework + LanguageDetector: `base.py` (BaseDetector ABC with detect, read_text, logger, detector_name), `types.py` extended (DetectorResult, AnalysisResults, DetectedTechnology, DetectedDependency, DetectedFile, DetectedMetric), `utils.py` (extension→language mapping covering 90+ extensions), `language_detector.py` (LanguageDetector — extension-based language classification, aggregate counts, DetectedFile enrichment), 48 new tests (69 total in test_analysis), all pass
+- M4.3B FrameworkDetector: `framework_detector.py` (EvidenceRule hierarchy: JsonDependencyRule, XmlDependencyRule, TomlDependencyRule, LineDependencyRule, FileExistsRule; FrameworkDefinition with 32 definitions across 4 categories; FrameworkDetector with two-phase design, confidence merging, deduplication), `test_framework_detector.py` (45 tests covering all rule types, framework detection, edge cases), all 114 tests in test_analysis pass
 
 ---
 
 # In Progress
 
-Milestone 4 — Static Analysis (M4 infrastructure, discovery, detector framework, LanguageDetector complete)
+Milestone 4 — Static Analysis (M4 infrastructure, discovery, detector framework, LanguageDetector, FrameworkDetector complete)
 
 ---
 
@@ -87,7 +87,9 @@ None.
 
 # Next Tasks
 
-1. Implement Analysis module (language detection, framework detection, dependency parsing, file metadata extraction)
+1. Implement DependencyDetector (parse dependency manifests)
+2. Implement MetricsCollector (file metrics, lines of code, complexity)
+3. Implement AnalysisWriter and pipeline orchestration
 
 ---
 
@@ -159,17 +161,17 @@ Status: In Progress
 - [x] discovery.py (DiscoveryEngine, deterministic os.walk traversal, error resilience)
 - [x] 21 tests passing
 
-### M4.3 — Detector Framework & LanguageDetector
+### M4.3 — Detector Framework & Detectors
 
 - [x] base.py (BaseDetector ABC with detect, read_text, logger, detector_name)
 - [x] types.py extended (DetectorResult, AnalysisResults, DetectedTechnology, DetectedDependency, DetectedFile, DetectedMetric)
 - [x] utils.py (extension→language mapping covering 90+ extensions)
 - [x] language_detector.py (LanguageDetector — extension classification, aggregation, DetectedFile enrichment)
-- [x] 48 tests passing (69 total in test_analysis)
+- [x] framework_detector.py (FrameworkDetector — EvidenceRule hierarchy, 32 FrameworkDefinitions, two-phase design)
+- [x] 93 tests passing (114 total in test_analysis)
 
 ### M4.4 — Remaining Detectors
 
-- [ ] FrameworkDetector
 - [ ] DependencyDetector
 - [ ] MetricsCollector
 
@@ -705,12 +707,51 @@ Next
 
 ---
 
+## Session 12 — 2026-07-26
+
+Completed
+
+- Implemented FrameworkDetector (`backend/app/modules/analysis/framework_detector.py`) — EvidenceRule ABC hierarchy with 5 implementations: JsonDependencyRule (dot-separated JSON key path), XmlDependencyRule (Maven artifactId matching with namespace handling), TomlDependencyRule (TOML key path), LineDependencyRule (requirements.txt and Gemfile patterns), FileExistsRule (evidence file presence)
+- Created 32 FrameworkDefinition entries across 4 categories: 11 frontend/backend frameworks (React, Next.js, Vue, Nuxt, Angular, Svelte, SvelteKit, Express, NestJS, Django, Flask, FastAPI, Spring Boot, ASP.NET Core, Laravel, Ruby on Rails), 7 build tools (Vite, Webpack, Rollup, Parcel, Maven, Gradle, Cargo), 6 package managers (npm, pnpm, yarn, bun, pip, Poetry), 3 runtimes (Node.js, Deno, Bun)
+- Implemented FrameworkDetector with two-phase design (public detect() catches exceptions → returns error DetectorResult; private _detect() contains pure logic), confidence merging (high > medium > low), evidence deduplication, and deterministic sorted output
+- Added helper functions: _find_file (exact name + wildcard *.csproj matching), _read_text, _conf_level, _namespaces, _tag
+- Created 45 comprehensive tests covering: all 5 EvidenceRule types (found/not found/missing file/corrupt content edge cases), FrameworkDetector integration (empty project, single/multiple frameworks, Angular with angular.json, Django with manage.py, Spring Boot with pom.xml, Vite with vite.config.ts, Cargo, Next.js without React implication, duplicate evidence merging, confidence merging, corrupted config, deterministic output, full tech stack, Bun, FastAPI with pyproject.toml, detector_name correctness, all definitions have category and rules)
+- Updated PROJECT_STATE.md with M4.3 milestone update, Session 12, current task/focus
+
+Files Created
+
+- `backend/app/modules/analysis/framework_detector.py` — FrameworkDetector + 5 EvidenceRule implementations + 32 FrameworkDefinitions (415 lines)
+- `backend/tests/test_analysis/test_framework_detector.py` — 45 tests
+
+Testing Performed
+
+- 114 tests in test_analysis: 48 detector framework tests + 21 discovery tests + 45 framework detector tests, all passing
+
+Architecture Decisions
+
+- EvidenceRule ABC enables pluggable rule evaluation without modifying FrameworkDetector for new frameworks
+- JsonDependencyRule uses dot-separated key_path (supports deeply nested keys like "dependencies.@angular/core")
+- XmlDependencyRule handles Maven pom.xml (artifactId text) with namespace-aware matching; wildcard (*.csproj) filename support for ASP.NET Core
+- Corrupt/unreadable config files return medium-confidence evidence rather than None — distinguishes "file missing" from "file present but unreadable"
+- FrameworkDefinition is a flat frozen dataclass with name, category, and rules list — no nesting or inheritance
+- Confidence priority: high (2) > medium (1) > low (0); best evidence wins for each framework
+- Next.js does NOT imply React — each framework definition is self-contained
+- Duplicate evidence details are deduplicated per framework (mutable list dedup in accumulation phase)
+- _find_file, _read_text are module-level functions (not BaseDetector methods) — keeps I/O isolated in the framework_detector module
+- _namespaces/_tag helpers handle XML namespace prefixes for csproj and similar formats
+- 45 tests organized in 7 test classes matching the rule hierarchy
+
+Next
+
+- DependencyDetector implementation (parse dependency manifests)
+- MetricsCollector implementation (file metrics, lines of code)
+
 # Definition of Current State
 
 The project has reached v0.4.0 with Milestone 4 (Static Analysis) actively in progress.
 
-Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete. Milestone 4 is in progress: M4.1 Infrastructure (models, migration, repository) complete, M4.2 Discovery Engine (FileGraph, IgnoreRules, DiscoveryEngine) complete, M4.3B Detector Framework + LanguageDetector (BaseDetector, DetectorResult, AnalysisResults, utils, LanguageDetector) complete. Remaining: FrameworkDetector, DependencyDetector, MetricsCollector, AnalysisWriter, pipeline orchestration.
+Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete. Milestone 4 is in progress: M4.1 Infrastructure (models, migration, repository) complete, M4.2 Discovery Engine (FileGraph, IgnoreRules, DiscoveryEngine) complete, M4.3 Detector Framework + LanguageDetector + FrameworkDetector complete. Remaining: DependencyDetector, MetricsCollector, AnalysisWriter, pipeline orchestration.
 
-The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), Discovery Engine (os.walk with deterministic sorting, ignore rules, FileGraph), and Detector Framework (BaseDetector ABC, LanguageDetector, extension→language mapping). The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 tables + 5 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
+The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), Discovery Engine (os.walk with deterministic sorting, ignore rules, FileGraph), Detector Framework (BaseDetector ABC, LanguageDetector, FrameworkDetector), and extension→language mapping. The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 tables + 5 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
 
-The next session should implement the remaining detectors (FrameworkDetector, DependencyDetector, MetricsCollector) followed by AnalysisWriter and pipeline orchestration.
+The next session should implement the remaining detectors (DependencyDetector, MetricsCollector) followed by AnalysisWriter and pipeline orchestration.
