@@ -1,8 +1,11 @@
+import datetime
+
 from sqlalchemy.orm import Session
 
 from app.models.analysis import Analysis
 from app.models.analysis_file import AnalysisFile
 from app.models.analysis_technology import AnalysisTechnology
+from app.models.analysis_warning import AnalysisWarning
 from app.models.dependency import Dependency
 from app.models.metric import Metric
 from app.models.technology import Technology
@@ -189,3 +192,44 @@ def list_metrics(db: Session, analysis_id: int) -> list[Metric]:
         .order_by(Metric.key)
         .all()
     )
+
+
+def batch_add_files(db: Session, analysis_id: int, files: list[dict]) -> None:
+    for data in files:
+        db.add(AnalysisFile(analysis_id=analysis_id, **data))
+
+
+def batch_add_technologies(
+    db: Session, analysis_id: int, technologies: list[dict],
+) -> None:
+    for data in technologies:
+        db.add(AnalysisTechnology(analysis_id=analysis_id, **data))
+
+
+def batch_add_dependencies(db: Session, analysis_id: int, dependencies: list[dict]) -> None:
+    for data in dependencies:
+        db.add(Dependency(analysis_id=analysis_id, **data))
+
+
+def batch_add_metrics(db: Session, analysis_id: int, metrics: list[dict]) -> None:
+    for data in metrics:
+        db.add(Metric(analysis_id=analysis_id, **data))
+
+
+def batch_add_warnings(db: Session, analysis_id: int, warnings: list[dict]) -> None:
+    for data in warnings:
+        db.add(AnalysisWarning(analysis_id=analysis_id, **data))
+
+
+def update_analysis_status(
+    db: Session, analysis_id: int, status: str, error_detail: str | None = None, completed_at: datetime.datetime | None = None,
+) -> Analysis | None:
+    analysis = get_analysis_by_id(db, analysis_id)
+    if analysis is None:
+        return None
+    analysis.status = status
+    if error_detail is not None:
+        analysis.error_detail = error_detail
+    if completed_at is not None:
+        analysis.completed_at = completed_at
+    return analysis

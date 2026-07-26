@@ -3,6 +3,7 @@ from app.models.project import Project
 from app.models.analysis import Analysis
 from app.models.analysis_file import AnalysisFile
 from app.models.analysis_technology import AnalysisTechnology
+from app.models.analysis_warning import AnalysisWarning
 from app.models.dependency import Dependency
 from app.models.metric import Metric
 from app.models.report import Report
@@ -13,6 +14,7 @@ __all__ = [
     "Analysis",
     "AnalysisFile",
     "AnalysisTechnology",
+    "AnalysisWarning",
     "Dependency",
     "Metric",
     "Project",

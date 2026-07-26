@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, BigInteger, DateTime, ForeignKey, Index, func
+from sqlalchemy import Column, Integer, String, BigInteger, Text, DateTime, ForeignKey, Index, func
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -10,7 +10,8 @@ class Metric(Base):
     id = Column(Integer, primary_key=True, index=True)
     analysis_id = Column(Integer, ForeignKey("analyses.id"), nullable=False, index=True)
     key = Column(String(64), nullable=False)
-    value = Column(BigInteger, nullable=False)
+    value = Column(BigInteger, nullable=True)
+    value_str = Column(Text, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
     analysis = relationship("Analysis", backref="metrics")
