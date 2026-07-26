@@ -24,7 +24,7 @@ Current Phase: Development
 
 Current Sprint: Sprint 1 - Project Foundation
 
-Overall Progress: 15%
+Overall Progress: 20%
 
 Status: In Progress
 
@@ -41,13 +41,12 @@ Complete Milestone 1 — Project Foundation by finishing frontend setup, databas
 # Current Task
 
 - Frontend initialization with React + TypeScript + Vite
-- Authentication module implementation (register, login, JWT)
 
 ---
 
 # Current Focus
 
-The current priority is completing the remaining Milestone 1 tasks: frontend setup and authentication implementation.
+The current priority is completing the remaining Milestone 1 task: frontend setup.
 
 ---
 
@@ -58,12 +57,13 @@ The current priority is completing the remaining Milestone 1 tasks: frontend set
 - PostgreSQL configured with connection pooling (`pool_size=5`, `max_overflow=10`, `pool_pre_ping=True`, `echo` driven by `DATABASE_ECHO`)
 - Initial Alembic migration generated (`b1a1677bc7ef_initial_migration.py` — creates `users`, `projects`, `analyses`, `reports`)
 - Docker Compose setup: `db` (PostgreSQL 16 Alpine) + `backend` (FastAPI) with health checks, named volumes, and default bridge networking
+- Authentication system: register, login (JWT), password hashing (bcrypt via passlib), get_current_user dependency, protected `/auth/me` endpoint
 
 ---
 
 # In Progress
 
-Milestone 1 — Project Foundation (4/6 tasks complete)
+Milestone 1 — Project Foundation (5/6 tasks complete)
 
 ---
 
@@ -76,7 +76,6 @@ None.
 # Next Tasks
 
 1. Initialize React frontend with Vite + TypeScript + TailwindCSS
-2. Implement authentication module (register, login, token refresh)
 
 ---
 
@@ -84,7 +83,7 @@ None.
 
 ## Milestone 1 — Project Foundation
 
-Status: In Progress (4/6)
+Status: In Progress (5/6)
 
 Tasks
 
@@ -93,7 +92,7 @@ Tasks
 - [ ] Frontend Setup
 - [x] PostgreSQL Setup
 - [x] Docker Setup
-- [ ] Authentication
+- [x] Authentication
 
 ---
 
@@ -170,7 +169,7 @@ docs/
 
 backend/
 ├── app/
-│   ├── core/          (config, database, security, exceptions)
+│   ├── core/          (config, database, security, exceptions, dependencies)
 │   ├── models/        (User, Project, Analysis, Report)
 │   ├── modules/       (auth, projects, upload, analysis, ai, documentation, modernization, reports)
 │   │   └── */         (routes, service, schemas, repository)
@@ -235,6 +234,9 @@ Deployment
 - Later-milestone schema and model fields stripped to keep M1 focused on foundation only.
 - `docker-compose.yml` at repository root orchestrates `db` (PostgreSQL 16 Alpine) + `backend` (FastAPI) with health check dependency and named volumes.
 - Dockerfile uses `pip install .`; `pyproject.toml` required `[tool.setuptools.packages.find]` to resolve flat-layout build error.
+- Authentication uses JWT (HS256, 30-min expiry, `sub`/`iat`/`exp` claims), bcrypt via `passlib` (pinned `bcrypt<4.1.0` for compatibility), and stateless client-side logout.
+- Registration returns user profile without issuing a JWT; tokens are only issued via `/auth/login`.
+- `get_current_user` dependency lives in `app/core/dependencies.py` for reuse across all modules.
 
 ---
 
@@ -338,7 +340,38 @@ Design Decisions
 Next
 
 - Frontend initialization
-- Authentication implementation
+
+---
+
+## Session 5 — 2026-07-26
+
+Completed
+
+- Authentication implementation: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
+- Registration returns user profile (201) — no automatic login
+- Login returns JWT with `sub`, `iat`, `exp` claims (30-min expiry)
+- Password hashing with `passlib[bcrypt]` (bcrypt backend pinned to `<4.1.0` for compatibility)
+- `decode_access_token` added to `app/core/security.py`
+- `get_current_user` dependency in `app/core/dependencies.py` using `OAuth2PasswordBearer`
+- Auth router included in `app/main.py`
+- Schemas updated with `EmailStr`, `Field` validation, `ConfigDict(from_attributes=True)`
+- `ConflictException` (409) added to `app/core/exceptions.py`
+- `email-validator>=2.0.0` added to `pyproject.toml`
+- Pinned `bcrypt>=4.0.0,<4.1.0` in `pyproject.toml` to resolve `passlib` compatibility issue (`bcrypt>=4.1.0` changed internal API)
+- Fixed `datetime.utcnow()` → `datetime.now(tz=timezone.utc)` in `security.py`
+- Verified: register, duplicate register (409), login, wrong password (401), `/auth/me` with valid token, `/auth/me` with invalid token (401)
+
+Design Decisions
+
+- Registration does not issue a JWT — authentication occurs only through login
+- Stateless JWT, no refresh tokens, no token blacklist (client-side discard on logout)
+- `OAuth2PasswordBearer` used for token extraction from `Authorization: Bearer` header; login endpoint accepts JSON (not form data) — `tokenUrl` is metadata only for OpenAPI schema
+- `email-validator` added over manual regex validation — standard, well-maintained, handles edge cases
+- `bcrypt<4.1.0` pinned because `passlib`'s internal `_bcrypt.hashpw` call is incompatible with bcrypt 4.1.0+
+
+Next
+
+- Frontend initialization
 
 ---
 
@@ -346,6 +379,6 @@ Next
 
 The project has moved from planning to active development (v0.1.0).
 
-Milestone 1 is in progress with 4 of 6 tasks complete. The backend is now fully containerized via Docker Compose with PostgreSQL 16 Alpine, health checks, and named volumes. The initial Alembic migration has been applied, creating all 4 tables. The backend skeleton is fully established with a modular FastAPI structure, SQLAlchemy models, Alembic migrations, and all 8 feature modules scaffolded with routes, services, schemas, and repository separation.
+Milestone 1 is in progress with 5 of 6 tasks complete. The backend has a complete authentication system (register, login, JWT, protected endpoint), is containerized via Docker Compose with PostgreSQL 16 Alpine, and has the initial Alembic migration applied. The backend skeleton is fully established with a modular FastAPI structure, SQLAlchemy models, Alembic migrations, and all 8 feature modules scaffolded with routes, services, schemas, and repository separation.
 
-The next session should initialize the frontend and implement the authentication module.
+The next session should initialize the frontend — the last remaining Milestone 1 task.

@@ -18,3 +18,8 @@ class NotFoundException(AppException):
 class UnauthorizedException(AppException):
     def __init__(self, message: str = "Not authorized"):
         super().__init__(code="UNAUTHORIZED", message=message, status_code=401)
+
+
+class ConflictException(AppException):
+    def __init__(self, code: str, message: str):
+        super().__init__(code=code, message=message, status_code=409)
