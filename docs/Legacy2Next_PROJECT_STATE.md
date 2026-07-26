@@ -40,7 +40,6 @@ Complete Milestone 4 — Static Analysis by implementing the remaining detectors
 
 # Current Task
 
-- DependencyDetector implementation (M4.4)
 - MetricsCollector implementation (M4.4)
 - AnalysisWriter / persistence (M4.5)
 
@@ -70,12 +69,13 @@ The current priority is completing the remaining detectors (FrameworkDetector, D
 - M4.2 Discovery Engine: `types.py` (FileNode, DirectoryNode, FileGraph with hybrid representation, DiscoveryContext, DiscoveryStats), `ignore_rules.py` (IgnoreRules with 4 match strategies, 12 default dirs, 2 files, 2 globs), `discovery.py` (DiscoveryEngine with os.walk traversal, deterministic sorting, error resilience), 21 tests
 - M4.3B Detector Framework + LanguageDetector: `base.py` (BaseDetector ABC with detect, read_text, logger, detector_name), `types.py` extended (DetectorResult, AnalysisResults, DetectedTechnology, DetectedDependency, DetectedFile, DetectedMetric), `utils.py` (extension→language mapping covering 90+ extensions), `language_detector.py` (LanguageDetector — extension-based language classification, aggregate counts, DetectedFile enrichment), 48 new tests (69 total in test_analysis), all pass
 - M4.3B FrameworkDetector: `framework_detector.py` (EvidenceRule hierarchy: JsonDependencyRule, XmlDependencyRule, TomlDependencyRule, LineDependencyRule, FileExistsRule; FrameworkDefinition with 32 definitions across 4 categories; FrameworkDetector with two-phase design, confidence merging, deduplication), `test_framework_detector.py` (45 tests covering all rule types, framework detection, edge cases), all 114 tests in test_analysis pass
+- M4.5B DependencyDetector: `dependency_detector.py` (closed ManifestParser hierarchy with 9 parsers: PackageJsonParser, RequirementsParser, PyProjectParser, PomParser, GradleParser, CargoParser, ComposerParser, GemfileParser, CsProjParser; _RawDependency intermediate model; _PARSER_REGISTRY data-driven dict; _merge_deduplicate with version conflict warning; canonical category mapping; graceful degradation), `DetectedDependency` updated (source_files tuple, category field), `test_dependency_detector.py` (93 tests across 12 test classes covering all parsers, registry, dedup, integration), all 207 tests in test_analysis pass
 
 ---
 
 # In Progress
 
-Milestone 4 — Static Analysis (M4 infrastructure, discovery, detector framework, LanguageDetector, FrameworkDetector complete)
+Milestone 4 — Static Analysis (M4 infrastructure, discovery, detector framework, LanguageDetector, FrameworkDetector, DependencyDetector complete)
 
 ---
 
@@ -87,9 +87,8 @@ None.
 
 # Next Tasks
 
-1. Implement DependencyDetector (parse dependency manifests)
-2. Implement MetricsCollector (file metrics, lines of code, complexity)
-3. Implement AnalysisWriter and pipeline orchestration
+1. Implement MetricsCollector (file metrics, lines of code, complexity)
+2. Implement AnalysisWriter and pipeline orchestration
 
 ---
 
@@ -168,11 +167,11 @@ Status: In Progress
 - [x] utils.py (extension→language mapping covering 90+ extensions)
 - [x] language_detector.py (LanguageDetector — extension classification, aggregation, DetectedFile enrichment)
 - [x] framework_detector.py (FrameworkDetector — EvidenceRule hierarchy, 32 FrameworkDefinitions, two-phase design)
-- [x] 93 tests passing (114 total in test_analysis)
+- [x] dependency_detector.py (DependencyDetector — 9 parsers, closed hierarchy, canonical categories, dedup)
+- [x] 186 tests passing (207 total in test_analysis)
 
 ### M4.4 — Remaining Detectors
 
-- [ ] DependencyDetector
 - [ ] MetricsCollector
 
 ### M4.5 — AnalysisWriter & Pipeline
@@ -743,15 +742,60 @@ Architecture Decisions
 
 Next
 
-- DependencyDetector implementation (parse dependency manifests)
+- MetricsCollector implementation (file metrics, lines of code)
+
+---
+
+## Session 13 — 2026-07-26
+
+Completed
+
+- Implemented DependencyDetector (`backend/app/modules/analysis/dependency_detector.py`) — closed ManifestParser ABC hierarchy with 9 parsers: PackageJsonParser (npm `dependencies`/`devDependencies`/`peerDependencies`/`optionalDependencies` with dict version format), RequirementsParser (pinned versions, version ranges, editable git installs, comment/option skipping), PyProjectParser (PEP 621 `[project.dependencies]`, `[project.optional-dependencies]`, Poetry `[tool.poetry.dependencies]`/`[tool.poetry.dev-dependencies]`/`[tool.poetry.group.*.dependencies]`), PomParser (Maven groupId:artifactId, scope mapping, optional flag), GradleParser (implementation/api/testImplementation/compileOnly etc. with parenthesised and unparenthesised notation, best-effort), CargoParser (TOML `[dependencies]`/`[dev-dependencies]`/`[build-dependencies]`, table format, git deps), ComposerParser (PHP `require`/`require-dev`), GemfileParser (Ruby `gem` declarations with single/double quotes), CsProjParser (.NET PackageReference with Include/Version attributes)
+- Created _RawDependency internal immutable intermediate model — decouples parsing from public DetectedDependency model
+- Created _PARSER_REGISTRY module-level dict — data-driven filename-to-parser mapping, no conditional chains
+- Created _resolve_parsers helper — exact name match + *.csproj wildcard fallback
+- Created _merge_deduplicate function — dedup by (name, ecosystem, category), version conflict warning, sorted tuple source_files, deterministic output
+- Implemented canonical category mapping per parser — runtime, development, build, peer, optional, system — using data-driven _CATEGORY_MAP dicts in each parser
+- Updated DetectedDependency in types.py — added category: str = "runtime", changed source_file: str | None to source_files: tuple[str, ...] = ()
+- All 207 tests in test_analysis pass (48 detector framework + 21 discovery + 45 framework detector + 93 dependency detector)
+
+Files Created
+
+- `backend/app/modules/analysis/dependency_detector.py` — DependencyDetector + 9 parsers + registry + dedup (450+ lines)
+- `backend/tests/test_analysis/test_dependency_detector.py` — 93 tests across 12 test classes
+
+Files Modified
+
+- `backend/app/modules/analysis/types.py` — DetectedDependency: added category, renamed source_file → source_files
+- `backend/tests/test_analysis/test_detector_framework.py` — Updated 2 tests for new DetectedDependency fields
+- `docs/Legacy2Next_PROJECT_STATE.md` — Session 13, milestone progress, current task/focus
+
+Testing Performed
+
+- 93 new dependency detector tests: _RawDependency (3), PackageJsonParser (11), RequirementsParser (9), PyProjectParser (9), PomParser (6), GradleParser (6), CargoParser (7), ComposerParser (4), GemfileParser (6), CsProjParser (4), ParserRegistry (5), MergeDeduplicate (7), DependencyDetector integration (16)
+- Full test_analysis suite: 207 tests, all passing
+
+Architecture Decisions
+
+- Closed parser hierarchy (one class per manifest format) rather than monolithic parser — each parser independently testable, no conditional chains
+- _RawDependency intermediate model decouples parsing from the public DetectedDependency model — parsers return plain data, not domain objects
+- Per-parser _CATEGORY_MAP dicts for canonical category mapping — data-driven, no conditional mapping logic
+- Parsers return (list[_RawDependency], list[str]) — warnings as data, not exceptions; DependencyDetector owns logging and aggregation
+- Gradle DSL marked as best-effort with regex-based extraction — partial results accepted, documented limitation
+- Duplicates deduplicated by (name, ecosystem, category) — version conflicts emit warnings but preserve first-seen version
+- source_files is tuple[str, ...] — immutable, iterable, JSON-serializable, deterministically sorted
+- No metadata field, no confidence field, no version normalization — minimal factual model
+
+Next
+
 - MetricsCollector implementation (file metrics, lines of code)
 
 # Definition of Current State
 
 The project has reached v0.4.0 with Milestone 4 (Static Analysis) actively in progress.
 
-Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete. Milestone 4 is in progress: M4.1 Infrastructure (models, migration, repository) complete, M4.2 Discovery Engine (FileGraph, IgnoreRules, DiscoveryEngine) complete, M4.3 Detector Framework + LanguageDetector + FrameworkDetector complete. Remaining: DependencyDetector, MetricsCollector, AnalysisWriter, pipeline orchestration.
+Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete. Milestone 4 is in progress: M4.1 Infrastructure (models, migration, repository) complete, M4.2 Discovery Engine (FileGraph, IgnoreRules, DiscoveryEngine) complete, M4.3 Detector Framework + LanguageDetector + FrameworkDetector + DependencyDetector complete. Remaining: MetricsCollector, AnalysisWriter, pipeline orchestration.
 
-The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), Discovery Engine (os.walk with deterministic sorting, ignore rules, FileGraph), Detector Framework (BaseDetector ABC, LanguageDetector, FrameworkDetector), and extension→language mapping. The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 tables + 5 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
+The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), Discovery Engine (os.walk with deterministic sorting, ignore rules, FileGraph), Detector Framework (BaseDetector ABC, LanguageDetector, FrameworkDetector, DependencyDetector), and extension→language mapping. The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 tables + 5 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
 
-The next session should implement the remaining detectors (DependencyDetector, MetricsCollector) followed by AnalysisWriter and pipeline orchestration.
+The next session should implement MetricsCollector followed by AnalysisWriter and pipeline orchestration.

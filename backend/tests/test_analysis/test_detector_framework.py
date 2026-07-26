@@ -136,18 +136,21 @@ class TestDetectedDependency:
         d = DetectedDependency(name="requests")
         assert d.version is None
         assert d.type == "library"
-        assert d.source_file is None
+        assert d.source_files == ()
         assert d.ecosystem is None
+        assert d.category == "runtime"
 
     def test_all_fields(self):
         d = DetectedDependency(
             name="express",
             version="^4.18",
             type="runtime",
-            source_file="package.json",
+            source_files=("package.json",),
             ecosystem="npm",
+            category="development",
         )
         assert d.version == "^4.18"
+        assert d.category == "development"
 
 
 # ─── DetectedMetric Tests ────────────────────────────────────────────────

@@ -16,7 +16,7 @@
 
 ## Project Overview
 
-Legacy2Next is a FastAPI backend for legacy software analysis and modernization. At v0.4.0 the backend has a complete authentication system, a Projects CRUD module with ownership scoping, an Uploads module with file storage and quota management, a Discovery Engine, a Detector Framework with LanguageDetector and FrameworkDetector, a PostgreSQL database with Alembic migrations, Docker Compose orchestration, and a storage abstraction layer. The auth, projects, uploads, and analysis (discovery + detector framework) modules are partially implemented; the remaining modules are stubs awaiting their milestone.
+Legacy2Next is a FastAPI backend for legacy software analysis and modernization. At v0.4.0 the backend has a complete authentication system, a Projects CRUD module with ownership scoping, an Uploads module with file storage and quota management, a Discovery Engine, a Detector Framework with LanguageDetector, FrameworkDetector, and DependencyDetector, a PostgreSQL database with Alembic migrations, Docker Compose orchestration, and a storage abstraction layer. The auth, projects, uploads, and analysis (discovery + detector framework) modules are partially implemented; the remaining modules are stubs awaiting their milestone.
 
 **Phase:** Development (Milestone 4 — Static Analysis in progress).
 
@@ -33,7 +33,7 @@ Legacy2Next is a FastAPI backend for legacy software analysis and modernization.
 | SQLAlchemy models (User, Project, Upload, Analysis, Report, Technology, AnalysisTechnology, AnalysisFile, Dependency, Metric) | Implemented |
 | Alembic migration (10 tables, FKs, indexes) | Implemented |
 | Discovery Engine (FileGraph, IgnoreRules, deterministic os.walk) | Implemented |
-| Detector Framework (BaseDetector, LanguageDetector, FrameworkDetector, extension→language mapping) | Implemented |
+| Detector Framework (BaseDetector, LanguageDetector, FrameworkDetector, DependencyDetector, extension→language mapping) | Implemented |
 | Docker Compose (PostgreSQL 16 Alpine + FastAPI) | Implemented |
 | Dockerfile (python:3.12-slim, pip install) | Implemented |
 | pyproject.toml (PEP 621, uv-compatible) | Implemented |
@@ -74,7 +74,7 @@ backend/
 │   │   ├── auth/                        # Fully implemented (routes, service, schemas, repository)
 │   │   ├── projects/                    # Fully implemented (routes, service, schemas, repository)
 │   │   ├── uploads/                     # Fully implemented (routes, service, schemas, repository, quota)
-│   │   ├── analysis/                    # Implemented: discovery, ignore_rules, base, types, utils, language_detector, framework_detector (+ detectors/ subdirectory stubs)
+│   │   ├── analysis/                    # Implemented: discovery, ignore_rules, base, types, utils, language_detector, framework_detector, dependency_detector (+ detectors/ subdirectory stubs)
 │   │   ├── ai/                          # Scaffolded
 │   │   ├── documentation/               # Scaffolded (+ generators/ subdirectory stubs)
 │   │   ├── modernization/               # Scaffolded
@@ -99,7 +99,8 @@ backend/
 │   │   ├── __init__.py
 │   │   ├── test_discovery.py            # 21 tests (DiscoveryEngine, IgnoreRules, FileGraph)
 │   │   ├── test_detector_framework.py   # 48 tests (BaseDetector, types, utils, LanguageDetector)
-│   │   └── test_framework_detector.py   # 45 tests (FrameworkDetector, EvidenceRule hierarchy)
+│   │   ├── test_framework_detector.py   # 45 tests (FrameworkDetector, EvidenceRule hierarchy)
+│   │   └── test_dependency_detector.py   # 93 tests (DependencyDetector, 9 parsers, dedup)
 │   ├── test_ai/                         # Empty __init__.py
 │   ├── test_documentation/              # Empty __init__.py
 │   ├── test_modernization/              # Empty __init__.py
@@ -123,7 +124,7 @@ module_name/
 └── repository.py      # SQLAlchemy queries (data access)
 ```
 
-The `analysis` module contains an extra `detectors/` subdirectory for future pluggable analysis strategies. The detection framework (BaseDetector, LanguageDetector, FrameworkDetector) is now implemented; the existing `detectors/language.py`, `detectors/framework.py`, `detectors/dependency.py` stubs remain unused until migration.
+The `analysis` module contains an extra `detectors/` subdirectory for future pluggable analysis strategies. The detection framework (BaseDetector, LanguageDetector, FrameworkDetector, DependencyDetector) is now implemented; the existing `detectors/language.py`, `detectors/framework.py`, `detectors/dependency.py` stubs remain unused until migration.
 
 ---
 
@@ -483,7 +484,7 @@ A React + TypeScript + Vite + TailwindCSS application will be initialized in the
 
 | Module | Status |
 |---|---|
-| **Analysis** | In progress. Discovery Engine (FileGraph, IgnoreRules, DiscoveryEngine) and Detector Framework (BaseDetector, LanguageDetector, FrameworkDetector, extension→language mapping) implemented. Routes, service, schemas, repository stubs exist. Remaining detectors (DependencyDetector, MetricsCollector) and AnalysisWriter to be implemented. |
+| **Analysis** | In progress. Discovery Engine (FileGraph, IgnoreRules, DiscoveryEngine) and Detector Framework (BaseDetector, LanguageDetector, FrameworkDetector, DependencyDetector, extension→language mapping) implemented. Routes, service, schemas, repository stubs exist. Remaining: MetricsCollector and AnalysisWriter to be implemented. |
 | **AI** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
 | **Documentation** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist; `generators/` subdirectory present but empty. |
 | **Modernization** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
@@ -523,7 +524,7 @@ Uploads (M3) is now complete. Remaining modules will be implemented in milestone
 │  Client   │────▶                    FastAPI Backend                       │
 │ (curl/   │     ├──────────┬──────────┬──────────┬──────────┬─────────────┤
 │  Swagger)│     │  Core    │   Auth   │ Project  │ Uploads  │  Analysis      │
-└──────────┘     │  Layer   │   ✅     │   ✅     │   ✅                       │  (disc+det+fwk)│
+└──────────┘     │  Layer   │   ✅     │   ✅     │   ✅                       │  (disc+det+fwk+dep)│
                  ├──────────┤          │          │          ├─────────────┤
                  │ Config   │          │          │          │   AI        │
                  │ Database │          │          │          │  (stub)     │
@@ -546,11 +547,11 @@ Uploads (M3) is now complete. Remaining modules will be implemented in milestone
               └──────────────┘
 ```
 
-✅ = implemented; (disc+det+fwk) = discovery + detector framework + FrameworkDetector implemented; everything else is scaffolded.
+✅ = implemented; (disc+det+fwk+dep) = discovery + detector framework + FrameworkDetector + DependencyDetector implemented; everything else is scaffolded.
 
 ### Next Milestones
 
-- **M4.4 (Remaining Detectors):** DependencyDetector, MetricsCollector
+- **M4.4 (Remaining Detectors):** MetricsCollector
 - **M4.5 (AnalysisWriter & Pipeline):** Pipeline orchestration, AnalysisService integration, database persistence
 - **M5 (AI Integration):** Implement `ai` module — AI-powered project summary, file explanation, documentation generation, recommendations
 - **M6 (Dashboard):** Implement `reports` and `documentation` modules — dashboard endpoints, report generation, documentation viewer, modernization suggestions

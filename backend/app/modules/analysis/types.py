@@ -15,8 +15,9 @@ class DetectedDependency:
     name: str
     version: str | None = None
     type: str = "library"
-    source_file: str | None = None
+    source_files: tuple[str, ...] = ()
     ecosystem: str | None = None
+    category: str = "runtime"
 
 
 @dataclass(frozen=True)
