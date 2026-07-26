@@ -2,8 +2,8 @@
 
 **Project:** Legacy2Next
 **Purpose:** Definitive reference for the implemented HTTP API.
-**Version:** 0.1.0
-**Current API Coverage:** 4 endpoints — Health (1) + Authentication (3)
+**Version:** 0.2.0
+**Current API Coverage:** 9 endpoints — Health (1) + Authentication (3) + Projects (5)
 **Last Updated:** 2026-07-26
 
 ---
@@ -12,6 +12,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1 | 2026-07-26 | Added Projects API (5 endpoints: POST/GET/GET-by-id/PATCH/DELETE /projects) |
 | 1.0 | 2026-07-26 | Initial API contract covering Health and Authentication endpoints |
 
 ---
@@ -47,7 +48,7 @@ Behaviour explicitly implemented in the codebase:
 - **JWT creation and verification** (`app/core/security.py`): HS256 signing, sub/iat/exp claims, 30-minute expiry.
 - **Password hashing and verification** (`app/core/security.py`): bcrypt via passlib `CryptContext`.
 - **Route-specific status codes**: `POST /auth/register` returns 201; `POST /auth/login` and `GET /auth/me` return 200.
-- **Business logic errors**: `ConflictException` on duplicate email, `UnauthorizedException` on bad credentials or invalid tokens.
+- **Business logic errors**: `ConflictException` on duplicate email, `UnauthorizedException` on bad credentials or invalid tokens, `NotFoundException` when a project is not found or not owned by the current user, `ValidationException` when a PATCH request contains no fields to update.
 
 ---
 
@@ -187,7 +188,10 @@ Multiple validation errors can appear in a single response.
 |--------|-------|--------|
 | 200 | Successful response with body | Application |
 | 201 | Resource created | Application |
+| 204 | Resource deleted, no response body | Application |
+| 400 | Business validation failure — no fields provided in PATCH request | Application |
 | 401 | Authentication failure — missing, invalid, or expired credentials | Framework / Application |
+| 404 | Resource not found or not owned by the current user | Application |
 | 409 | Resource conflict — duplicate email on registration | Application |
 | 422 | Request body failed Pydantic validation | Framework |
 | 500 | Unhandled server error | Framework |
@@ -203,6 +207,10 @@ Multiple validation errors can appear in a single response.
 | POST /auth/register | 409 | `EMAIL_EXISTS` | `Email already registered` | `auth/service.py:13` |
 | POST /auth/login | 401 | `UNAUTHORIZED` | `Invalid email or password` | `auth/service.py:25` |
 | GET /auth/me | 401 | `UNAUTHORIZED` | `Invalid or expired token` | `auth/service.py:34,37` |
+| GET /projects/{id} | 404 | `PROJECT_NOT_FOUND` | `Project not found` | `projects/service.py:12` |
+| PATCH /projects/{id} | 404 | `PROJECT_NOT_FOUND` | `Project not found` | `projects/service.py:12` |
+| PATCH /projects/{id} | 400 | `VALIDATION_ERROR` | `At least one field must be provided` | `projects/service.py:38` |
+| DELETE /projects/{id} | 404 | `PROJECT_NOT_FOUND` | `Project not found` | `projects/service.py:12` |
 
 ### Framework Errors
 
@@ -235,8 +243,9 @@ The implemented API covers:
 - User registration with email, password, and name
 - User login returning a JWT token
 - Authenticated user profile retrieval
+- Project management: create, list, get by ID, update, and delete projects
 
-No other endpoints are implemented. All other feature modules (projects, upload, analysis, AI, documentation, modernization, reports) exist as scaffolded stubs with empty `APIRouter` definitions that are not registered in `app/main.py`.
+No other endpoints are implemented outside of health, authentication, and projects. All other feature modules (upload, analysis, AI, documentation, modernization, reports) exist as scaffolded stubs with empty `APIRouter` definitions that are not registered in `app/main.py`.
 
 ---
 
@@ -649,11 +658,550 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ---
 
+## POST /projects
+
+### Purpose
+
+Create a new project owned by the authenticated user.
+
+### Authentication
+
+Bearer token required. Obtain a token from `POST /auth/login`.
+
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | Yes | `Bearer <token>` |
+| `Content-Type` | Yes | `application/json` |
+
+### Path Parameters
+
+None.
+
+### Query Parameters
+
+None.
+
+### Request Body
+
+```json
+{
+  "name": "My Project",
+  "description": "Optional description"
+}
+```
+
+### Validation Rules
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| `name` | `str` | Required. Minimum 1 character, maximum 100 characters. |
+| `description` | `str` or `null` | Optional. Maximum 1000 characters. Defaults to `null`. |
+
+All fields are validated by Pydantic. Validation errors return 422.
+
+### Success Responses
+
+| Status | Description |
+|--------|-------------|
+| 201 | Project created successfully |
+
+### Error Responses
+
+| Status | Code | Message | Condition |
+|--------|------|---------|-----------|
+| 401 | — | `Not authenticated` | `Authorization` header is missing or malformed (framework-generated) |
+| 422 | — | Validation error | Request body fails Pydantic validation |
+
+### Response Schema
+
+The response body is a `ProjectResponse` object.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `int` | Unique project identifier |
+| `name` | `str` | Project name |
+| `description` | `str` | Project description (empty string if not set) |
+| `language` | `str` | Detected language (default `"unknown"`) |
+| `framework` | `str` | Detected framework (default `"unknown"`) |
+| `file_count` | `int` | Number of files in the project (default `0`) |
+| `status` | `str` | Current analysis status (default `"pending"`) |
+| `created_at` | `datetime` | Timestamp when the project was created |
+| `updated_at` | `datetime` | Timestamp when the project was last updated |
+
+### Example Request
+
+```
+POST /projects
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+{
+  "name": "Legacy Banking App",
+  "description": "A 15-year-old banking application written in Java"
+}
+```
+
+### Example Responses
+
+**Status:** 201
+
+```json
+{
+  "id": 1,
+  "name": "Legacy Banking App",
+  "description": "A 15-year-old banking application written in Java",
+  "language": "unknown",
+  "framework": "unknown",
+  "file_count": 0,
+  "status": "pending",
+  "created_at": "2026-07-26T12:00:00",
+  "updated_at": "2026-07-26T12:00:00"
+}
+```
+
+**Status:** 401
+
+```json
+{
+  "detail": "Not authenticated"
+}
+```
+
+### Notes
+
+- The project is automatically scoped to the authenticated user (`user_id` is taken from `current_user.id`).
+- Default values for `language`, `framework`, `file_count`, and `status` are set by the SQLAlchemy model definition.
+- Route defined at `app/modules/projects/routes.py:18-24`.
+
+---
+
+## GET /projects
+
+### Purpose
+
+List all projects owned by the authenticated user, ordered by creation date descending.
+
+### Authentication
+
+Bearer token required. Obtain a token from `POST /auth/login`.
+
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | Yes | `Bearer <token>` |
+
+### Path Parameters
+
+None.
+
+### Query Parameters
+
+None.
+
+### Request Body
+
+None.
+
+### Validation Rules
+
+Not applicable.
+
+### Success Responses
+
+| Status | Description |
+|--------|-------------|
+| 200 | List of projects returned successfully |
+
+### Error Responses
+
+| Status | Code | Message | Condition |
+|--------|------|---------|-----------|
+| 401 | — | `Not authenticated` | `Authorization` header is missing or malformed (framework-generated) |
+
+### Response Schema
+
+The response body is a `ProjectListResponse` object.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `projects` | `list[ProjectResponse]` | Array of project objects owned by the current user |
+
+Each project object follows the `ProjectResponse` schema (see POST /projects).
+
+### Example Request
+
+```
+GET /projects
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### Example Response
+
+**Status:** 200
+
+```json
+{
+  "projects": [
+    {
+      "id": 2,
+      "name": "Healthcare Portal",
+      "description": "",
+      "language": "unknown",
+      "framework": "unknown",
+      "file_count": 0,
+      "status": "pending",
+      "created_at": "2026-07-26T13:00:00",
+      "updated_at": "2026-07-26T13:00:00"
+    },
+    {
+      "id": 1,
+      "name": "Legacy Banking App",
+      "description": "A 15-year-old banking application written in Java",
+      "language": "unknown",
+      "framework": "unknown",
+      "file_count": 0,
+      "status": "pending",
+      "created_at": "2026-07-26T12:00:00",
+      "updated_at": "2026-07-26T12:00:00"
+    }
+  ]
+}
+```
+
+**Status:** 401
+
+```json
+{
+  "detail": "Not authenticated"
+}
+```
+
+### Notes
+
+- Only projects owned by the authenticated user are returned. Other users' projects are not visible.
+- Returned in reverse chronological order (`created_at` descending).
+- Route defined at `app/modules/projects/routes.py:27-33`.
+
+---
+
+## GET /projects/{project_id}
+
+### Purpose
+
+Retrieve a single project by ID, scoped to the authenticated user.
+
+### Authentication
+
+Bearer token required. Obtain a token from `POST /auth/login`.
+
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | Yes | `Bearer <token>` |
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `project_id` | `int` | The ID of the project to retrieve |
+
+### Query Parameters
+
+None.
+
+### Request Body
+
+None.
+
+### Validation Rules
+
+Not applicable. Path parameter `project_id` is automatically parsed as an integer.
+
+### Success Responses
+
+| Status | Description |
+|--------|-------------|
+| 200 | Project found and returned |
+
+### Error Responses
+
+| Status | Code | Message | Condition |
+|--------|------|---------|-----------|
+| 401 | — | `Not authenticated` | `Authorization` header is missing or malformed (framework-generated) |
+| 404 | `PROJECT_NOT_FOUND` | `Project not found` | Project does not exist or belongs to another user |
+
+### Response Schema
+
+The response body is a `ProjectResponse` object (see POST /projects).
+
+### Example Request
+
+```
+GET /projects/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### Example Responses
+
+**Status:** 200
+
+```json
+{
+  "id": 1,
+  "name": "Legacy Banking App",
+  "description": "A 15-year-old banking application written in Java",
+  "language": "unknown",
+  "framework": "unknown",
+  "file_count": 0,
+  "status": "pending",
+  "created_at": "2026-07-26T12:00:00",
+  "updated_at": "2026-07-26T12:00:00"
+}
+```
+
+**Status:** 404
+
+```json
+{
+  "detail": {
+    "code": "PROJECT_NOT_FOUND",
+    "message": "Project not found"
+  }
+}
+```
+
+**Status:** 401
+
+```json
+{
+  "detail": "Not authenticated"
+}
+```
+
+### Notes
+
+- Returns 404 both when the project does not exist and when it exists but belongs to another user. This prevents information leakage about other users' project IDs.
+- Ownership is checked by comparing `project.user_id` with `current_user.id` in the service layer.
+- Route defined at `app/modules/projects/routes.py:36-42`.
+
+---
+
+## PATCH /projects/{project_id}
+
+### Purpose
+
+Update one or more fields of an existing project. Only fields provided in the request body are updated.
+
+### Authentication
+
+Bearer token required. Obtain a token from `POST /auth/login`.
+
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | Yes | `Bearer <token>` |
+| `Content-Type` | Yes | `application/json` |
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `project_id` | `int` | The ID of the project to update |
+
+### Query Parameters
+
+None.
+
+### Request Body
+
+```json
+{
+  "name": "Updated Name",
+  "description": "Updated description"
+}
+```
+
+All fields are optional. At least one field must be provided.
+
+### Validation Rules
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| `name` | `str` or `null` | Optional. If provided, minimum 1 character, maximum 100 characters. |
+| `description` | `str` or `null` | Optional. If provided, maximum 1000 characters. |
+
+### Success Responses
+
+| Status | Description |
+|--------|-------------|
+| 200 | Project updated successfully |
+
+### Error Responses
+
+| Status | Code | Message | Condition |
+|--------|------|---------|-----------|
+| 400 | `VALIDATION_ERROR` | `At least one field must be provided` | Request body contains no updatable fields (empty object or only null values) |
+| 401 | — | `Not authenticated` | `Authorization` header is missing or malformed (framework-generated) |
+| 404 | `PROJECT_NOT_FOUND` | `Project not found` | Project does not exist or belongs to another user |
+| 422 | — | Validation error | Request body fails Pydantic validation |
+
+### Response Schema
+
+The response body is a `ProjectResponse` object (see POST /projects) reflecting the updated state.
+
+### Example Request
+
+```
+PATCH /projects/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+{
+  "name": "Legacy Banking App v2"
+}
+```
+
+### Example Responses
+
+**Status:** 200
+
+```json
+{
+  "id": 1,
+  "name": "Legacy Banking App v2",
+  "description": "A 15-year-old banking application written in Java",
+  "language": "unknown",
+  "framework": "unknown",
+  "file_count": 0,
+  "status": "pending",
+  "created_at": "2026-07-26T12:00:00",
+  "updated_at": "2026-07-26T12:05:00"
+}
+```
+
+**Status:** 400
+
+```json
+{
+  "detail": {
+    "code": "VALIDATION_ERROR",
+    "message": "At least one field must be provided"
+  }
+}
+```
+
+**Status:** 404
+
+```json
+{
+  "detail": {
+    "code": "PROJECT_NOT_FOUND",
+    "message": "Project not found"
+  }
+}
+```
+
+### Notes
+
+- Uses `model_dump(exclude_unset=True)` to apply only the fields explicitly provided in the request body.
+- Setting a field to `null` is equivalent to not providing it — use the PUT equivalent for clearing fields if needed in future.
+- Business validation (at least one field required) is performed in the service layer, not by Pydantic. The Pydantic schema accepts all-null or empty objects; the service returns 400.
+- Route defined at `app/modules/projects/routes.py:45-52`.
+
+---
+
+## DELETE /projects/{project_id}
+
+### Purpose
+
+Delete a project owned by the authenticated user. This action is irreversible.
+
+### Authentication
+
+Bearer token required. Obtain a token from `POST /auth/login`.
+
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | Yes | `Bearer <token>` |
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `project_id` | `int` | The ID of the project to delete |
+
+### Query Parameters
+
+None.
+
+### Request Body
+
+None.
+
+### Validation Rules
+
+Not applicable. Path parameter `project_id` is automatically parsed as an integer.
+
+### Success Responses
+
+| Status | Description |
+|--------|-------------|
+| 204 | Project deleted successfully — no response body |
+
+### Error Responses
+
+| Status | Code | Message | Condition |
+|--------|------|---------|-----------|
+| 401 | — | `Not authenticated` | `Authorization` header is missing or malformed (framework-generated) |
+| 404 | `PROJECT_NOT_FOUND` | `Project not found` | Project does not exist or belongs to another user |
+
+### Response Schema
+
+No response body on success (HTTP 204).
+
+### Example Request
+
+```
+DELETE /projects/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### Example Responses
+
+**Status:** 204
+
+No body.
+
+**Status:** 404
+
+```json
+{
+  "detail": {
+    "code": "PROJECT_NOT_FOUND",
+    "message": "Project not found"
+  }
+}
+```
+
+### Notes
+
+- Returns 404 both when the project does not exist and when it exists but belongs to another user — same ownership-hiding behaviour as GET /projects/{id}.
+- No response body is returned on success (HTTP 204 No Content).
+- Route defined at `app/modules/projects/routes.py:55-61`.
+
+---
+
 # Future Endpoints
 
 The following API areas are planned for future milestones. No routes, schemas, or implementation details are defined yet.
 
-- Projects API — Planned
 - Upload API — Planned
 - Analysis API — Planned
 - AI API — Planned

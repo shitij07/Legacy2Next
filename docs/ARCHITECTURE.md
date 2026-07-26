@@ -2,7 +2,7 @@
 
 # Legacy2Next — Architecture
 
-> **Version:** 0.1.0
+> **Version:** 0.2.0
 >
 > **Status:** Implemented sections reflect the current repository. Planned sections describe upcoming milestones.
 >
@@ -16,9 +16,9 @@
 
 ## Project Overview
 
-Legacy2Next is a FastAPI backend for legacy software analysis and modernization. At v0.1.0 the backend has a complete authentication system, a PostgreSQL database with Alembic migrations, Docker Compose orchestration, and eight feature modules scaffolded with a consistent routes/service/schemas/repository structure. The auth module is fully implemented; all other modules are stubs awaiting their milestone.
+Legacy2Next is a FastAPI backend for legacy software analysis and modernization. At v0.2.0 the backend has a complete authentication system, a Projects CRUD module with ownership scoping, a PostgreSQL database with Alembic migrations, Docker Compose orchestration, and eight feature modules with a consistent routes/service/schemas/repository structure. The auth and projects modules are fully implemented; the remaining modules are stubs awaiting their milestone.
 
-**Phase:** Development (Milestone 1 — Project Foundation, 5/6 tasks complete).
+**Phase:** Development (Milestone 2 — Project Management, 1/3 tasks complete).
 
 **What exists today:**
 
@@ -27,13 +27,14 @@ Legacy2Next is a FastAPI backend for legacy software analysis and modernization.
 | FastAPI application factory (`app/main.py`) | Implemented |
 | Core layer (config, database, security, exceptions, dependencies) | Implemented |
 | Authentication module (register, login, JWT, /me) | Implemented |
+| Projects module (5 CRUD endpoints, ownership-scoped) | Implemented |
 | SQLAlchemy models (User, Project, Analysis, Report) | Implemented |
 | Alembic migration (4 tables, FKs, indexes) | Implemented |
 | Docker Compose (PostgreSQL 16 Alpine + FastAPI) | Implemented |
 | Dockerfile (python:3.12-slim, pip install) | Implemented |
 | pyproject.toml (PEP 621, uv-compatible) | Implemented |
 | Test scaffolding (pytest, TestClient, 8 test directories) | Scaffolded |
-| 7 non-auth modules (projects, upload, analysis, ai, documentation, modernization, reports) | Scaffolded — routes/services/schemas/repository stubs |
+| 6 non-auth modules (upload, analysis, ai, documentation, modernization, reports) | Scaffolded — routes/services/schemas/repository stubs |
 | Frontend (React + TypeScript + Vite) | Not initialized |
 | Background workers, integrations | Placeholder directories |
 
@@ -62,7 +63,7 @@ backend/
 │   ├── modules/
 │   │   ├── __init__.py
 │   │   ├── auth/                        # Fully implemented (routes, service, schemas, repository)
-│   │   ├── projects/                    # Scaffolded
+│   │   ├── projects/                    # Fully implemented (routes, service, schemas, repository)
 │   │   ├── upload/                      # Scaffolded (no schemas.py)
 │   │   ├── analysis/                    # Scaffolded (+ detectors/ subdirectory stubs)
 │   │   ├── ai/                          # Scaffolded
@@ -138,7 +139,7 @@ Every request follows a four-layer path through the backend:
 
 - **Database** (`app/core/database.py`): Engine configuration (connection pooling, echo), `SessionLocal` factory, `get_db` generator for dependency injection, `declarative_base` for model definitions.
 
-**Only the auth module has all four layers implemented.** All other modules have empty or minimal stubs at every layer (e.g., `routes.py` contains only `router = APIRouter(...)`, `service.py` contains only imports).
+**The auth and projects modules have all four layers implemented.** All other modules have empty or minimal stubs at every layer (e.g., `routes.py` contains only `router = APIRouter(...)`, `service.py` contains only imports).
 
 ---
 
@@ -170,6 +171,11 @@ Step 4 applies differently per endpoint:
 - `POST /auth/register` — injects `db` only
 - `POST /auth/login` — injects `db` only
 - `GET /auth/me` — injects `db` + `current_user` (JWT required)
+- `POST /projects` — injects `body` + `current_user` + `db`
+- `GET /projects` — injects `current_user` + `db`
+- `GET /projects/{project_id}` — injects `project_id` + `current_user` + `db`
+- `PATCH /projects/{project_id}` — injects `project_id` + `body` + `current_user` + `db`
+- `DELETE /projects/{project_id}` — injects `project_id` + `current_user` + `db`
 
 ---
 
@@ -180,7 +186,7 @@ The DI container is managed entirely by FastAPI's `Depends()` mechanism.
 | Dependency | Location | Used By |
 |---|---|---|
 | `get_db` — yields SQLAlchemy `Session` | `app/core/database.py:17` | All route handlers that need DB access |
-| `get_current_user` — returns `User` from JWT token | `app/core/dependencies.py:11` | Protected endpoints (`GET /auth/me`) |
+| `get_current_user` — returns `User` from JWT token | `app/core/dependencies.py:11` | All protected endpoints: `GET /auth/me`, all `/projects/*` endpoints |
 
 **`get_db` lifecycle:** A session is created at the start of each request and closed in the `finally` block of the generator. FastAPI handles the dependency lifecycle per request — no manual session management is required in route handlers.
 
@@ -377,7 +383,8 @@ AppException (HTTPException)
 Concrete subclasses:
 ├── NotFoundException      → 404, code="{ENTITY}_NOT_FOUND"
 ├── UnauthorizedException  → 401, code="UNAUTHORIZED"
-└── ConflictException      → 409, code=explicit
+├── ConflictException      → 409, code=explicit
+└── ValidationException    → 400, code="VALIDATION_ERROR"
 ```
 
 - All exceptions inherit from `fastapi.HTTPException` so FastAPI handles them natively — no custom middleware or exception handlers are registered
@@ -386,6 +393,9 @@ Concrete subclasses:
   - `ConflictException("EMAIL_EXISTS", ...)` on duplicate registration (409)
   - `UnauthorizedException("Invalid email or password")` on bad credentials (401)
   - `UnauthorizedException("Invalid or expired token")` on bad/missing JWT (401)
+- Used in `projects/service.py`:
+  - `NotFoundException("Project")` when project not found or not owned (404)
+  - `ValidationException("At least one field must be provided")` on empty PATCH body (400)
 
 ---
 
@@ -402,6 +412,17 @@ Concrete subclasses:
 
 ---
 
+### Projects module (fully implemented)
+
+| File | Responsibility |
+|---|---|
+| `routes.py` | 5 endpoints: POST `/projects` (201), GET `/projects` (200), GET `/projects/{id}` (200), PATCH `/projects/{id}` (200), DELETE `/projects/{id}` (204) |
+| `schemas.py` | `ProjectCreate` (name 1-100, description optional max 1000), `ProjectUpdate` (name/description both optional), `ProjectResponse` (id, name, description, language, framework, file_count, status, timestamps), `ProjectListResponse` (wraps list) |
+| `service.py` | `create_project`: creates project with ownership; `get_project`: ownership check → return; `list_projects`: list by owner; `update_project`: ownership check → validate non-empty → apply updates; `delete_project`: ownership check → delete. Uses private `_get_owned_project` helper for ownership enforcement. |
+| `repository.py` | `get_project_by_id`, `list_projects_by_owner`, `create_project`, `update_project`, `delete_project` — all use ORM-object interfaces, no dicts |
+
+---
+
 # Planned
 
 ---
@@ -414,7 +435,6 @@ A React + TypeScript + Vite + TailwindCSS application will be initialized in the
 
 | Module | Status |
 |---|---|
-| **Projects** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
 | **Upload** | Planned (not yet implemented). Module scaffolded — routes, service, repository stubs exist; `schemas.py` is missing. |
 | **Analysis** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist; `detectors/` subdirectory present with 3 empty files (language, framework, dependency). |
 | **AI** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
@@ -422,7 +442,7 @@ A React + TypeScript + Vite + TailwindCSS application will be initialized in the
 | **Modernization** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
 | **Reports** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
 
-All planned modules will be implemented in milestone order: Projects and Upload in M2, Analysis in M3, AI in M4, Documentation/Modernization/Reports in M5.
+All planned modules will be implemented in milestone order: Upload in M2, Analysis in M3, AI in M4, Documentation/Modernization/Reports in M5.
 
 ## Database Schema Expansion
 
@@ -443,20 +463,20 @@ All planned modules will be implemented in milestone order: Projects and Upload 
 
 ## Architecture Evolution
 
-### Current Milestone — Milestone 1
+### Current Milestone — Milestone 2
 
 ```
-                                                                  ┌──────────────┐
-                                                                  │   Frontend   │
-                                                                  │  (not yet)   │
-                                                                  └──────────────┘
-                                                                         │
-                                                                         ▼
+                                                                   ┌──────────────┐
+                                                                   │   Frontend   │
+                                                                   │  (not yet)   │
+                                                                   └──────────────┘
+                                                                          │
+                                                                          ▼
 ┌──────────┐     ┌──────────────────────────────────────────────────────────┐
 │  Client   │────▶                    FastAPI Backend                       │
 │ (curl/   │     ├──────────┬──────────┬──────────┬──────────┬─────────────┤
 │  Swagger)│     │  Core    │   Auth   │ Project  │ Upload   │  Analysis   │
-└──────────┘     │  Layer   │   ✅     │ (stub)   │ (stub)   │  (stub)     │
+└──────────┘     │  Layer   │   ✅     │   ✅     │ (stub)   │  (stub)     │
                  ├──────────┤          │          │          ├─────────────┤
                  │ Config   │          │          │          │   AI        │
                  │ Database │          │          │          │  (stub)     │
@@ -482,7 +502,7 @@ All planned modules will be implemented in milestone order: Projects and Upload 
 
 ### Next Milestones
 
-- **M2 (Project Management):** Implement `projects` and `upload` modules — project CRUD, ZIP upload, file extraction, project storage in `uploads/` directory
+- **M2 (Project Management):** Remaining tasks: ZIP upload, file extraction, project storage in `uploads/` directory
 - **M3 (Static Analysis):** Implement `analysis` module — language detection, framework detection, dependency parsing, file metadata extraction
 - **M4 (AI Integration):** Implement `ai` module — AI-powered project summary, file explanation, documentation generation, recommendations
 - **M5 (Dashboard):** Implement `reports` and `documentation` modules — dashboard endpoints, report generation, documentation viewer, modernization suggestions

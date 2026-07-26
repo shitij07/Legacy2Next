@@ -18,13 +18,13 @@
 
 Project Name: Legacy2Next
 
-Version: 0.1.0
+Version: 0.2.0
 
 Current Phase: Development
 
-Current Sprint: Sprint 1 - Project Foundation
+Current Sprint: Sprint 2 - Project Management
 
-Overall Progress: 20%
+Overall Progress: 30%
 
 Status: In Progress
 
@@ -34,19 +34,19 @@ Last Updated: 2026-07-26
 
 # Current Goal
 
-Complete Milestone 1 — Project Foundation by finishing frontend setup, database configuration, Docker Compose, authentication implementation, and architecture documentation.
+Complete Milestone 2 — Project Management by implementing the remaining tasks: ZIP upload, file extraction, and project storage.
 
 ---
 
 # Current Task
 
-- Frontend initialization with React + TypeScript + Vite
+- Upload module implementation (ZIP upload, file extraction, project storage)
 
 ---
 
 # Current Focus
 
-The current priority is completing the remaining Milestone 1 task: frontend setup.
+The current priority is completing the Upload module — the remaining Milestone 2 task.
 
 ---
 
@@ -61,12 +61,13 @@ The current priority is completing the remaining Milestone 1 task: frontend setu
 - Architecture documentation: `docs/ARCHITECTURE.md` with implemented/planned separation, Mermaid diagrams, layer architecture, request lifecycle, authentication flow, database schema, Docker Compose architecture, error handling, module organisation, and architecture evolution roadmap
 - Engineering decision log: `docs/DECISIONS.md` with 18 decisions covering technology stack, application architecture, database/migrations, authentication/security, Docker/infrastructure, and deferred features; each decision documents context, rationale, consequences, alternatives, and revisit conditions
 - API contract: `docs/API_CONTRACT.md` documenting all 4 implemented endpoints (GET /health, POST /auth/register, POST /auth/login, GET /auth/me) with full request/response schemas, validation rules, error codes, behaviour origins (framework vs application), examples, and future endpoint placeholders
+- Projects module: 5 CRUD endpoints (POST/GET/GET-by-id/PATCH/DELETE /projects), all auth-required, ownership-scoped via `_get_owned_project` helper, `ValidationException` added to exception hierarchy for PATCH-with-no-fields validation, repository uses ORM-object interfaces, projects router registered in `app/main.py`
 
 ---
 
 # In Progress
 
-Milestone 1 — Project Foundation (5/6 tasks complete)
+Milestone 2 — Project Management (1/3 tasks complete)
 
 ---
 
@@ -78,7 +79,7 @@ None.
 
 # Next Tasks
 
-1. Initialize React frontend with Vite + TypeScript + TailwindCSS
+1. Implement Upload module (ZIP upload, file extraction, project storage)
 
 ---
 
@@ -101,11 +102,11 @@ Tasks
 
 ## Milestone 2 — Project Management
 
-Status: Not Started
+Status: In Progress (1/3)
 
 Tasks
 
-- [ ] Project CRUD
+- [x] Project CRUD
 - [ ] ZIP Upload
 - [ ] Project Storage
 
@@ -178,12 +179,14 @@ backend/
 │   ├── core/          (config, database, security, exceptions, dependencies)
 │   ├── models/        (User, Project, Analysis, Report)
 │   ├── modules/       (auth, projects, upload, analysis, ai, documentation, modernization, reports)
-│   │   └── */         (routes, service, schemas, repository)
+│   │   ├── auth/      (fully implemented)
+│   │   ├── projects/  (fully implemented)
+│   │   └── */         (scaffolded — routes, service, schemas, repository)
 │   ├── workers/       (placeholder)
 │   ├── integrations/  (placeholder)
 │   └── utils/         (placeholder)
 ├── alembic/           (migration environment)
-├── tests/             (conftest + test dirs per module)
+├── tests/             (conftest + test dirs per module, all empty)
 ├── uploads/           (extracted project storage)
 ├── pyproject.toml
 ├── Dockerfile
@@ -245,6 +248,9 @@ Deployment
 - Registration returns user profile without issuing a JWT; tokens are only issued via `/auth/login`.
 - `get_current_user` dependency lives in `app/core/dependencies.py` for reuse across all modules.
 - Engineering decision log formalised in `docs/DECISIONS.md` — each decision documents context, rationale, consequences, alternatives considered, and future revisit conditions; deferred features are grouped to avoid decision inflation.
+- Projects module uses 404 Not Found (not 403) to hide unowned resources — prevents information leakage about other users' project IDs.
+- Projects repository accepts/returns ORM objects (`Project`) rather than dicts — ownership checks in the service layer rely on `project.user_id`.
+- `ValidationException` (HTTP 400) added for PATCH-with-no-fields — uses 400 rather than 422 to distinguish application-level validation from Pydantic schema validation.
 
 ---
 
@@ -443,10 +449,77 @@ Next
 
 ---
 
+## Session 9 — 2026-07-26
+
+Completed
+
+- Implemented Projects module with 5 CRUD endpoints: `POST /projects` (201), `GET /projects` (200), `GET /projects/{project_id}` (200), `PATCH /projects/{project_id}` (200), `DELETE /projects/{project_id}` (204)
+- All endpoints require authentication via `get_current_user` dependency
+- All operations scoped to the authenticated user (`current_user.id`) — users cannot access other users' projects
+- Ownership enforcement via private `_get_owned_project` helper in `projects/service.py`
+- `NotFoundException("Project")` raised (404) for missing or unowned resources — no information leakage about other users' project IDs
+- `ValidationException` added to `app/core/exceptions.py` (HTTP 400, code `VALIDATION_ERROR`) for PATCH requests with no updatable fields
+- Repository layer uses ORM-object interfaces (`Project` model instance), not dicts
+- `projects_router` registered in `app/main.py`
+- Updated `docs/API_CONTRACT.md`: added Projects endpoint documentation (5 endpoints), updated coverage count to 9, updated error response tables, removed Projects from Future Endpoints
+- Updated `docs/ARCHITECTURE.md`: Projects marked implemented, phase updated to M2, module organisation section added, architecture evolution diagram updated
+- Updated `docs/Legacy2Next_PROJECT_STATE.md`: Session 9 recorded, milestone progress updated, completed items extended
+
+Files Modified
+
+- `backend/app/core/exceptions.py` — Added `ValidationException` (HTTP 400, code `VALIDATION_ERROR`)
+- `backend/app/modules/projects/schemas.py` — Created `ProjectCreate`, `ProjectUpdate`, `ProjectResponse`, `ProjectListResponse`
+- `backend/app/modules/projects/repository.py` — Implemented `get_project_by_id`, `list_projects_by_owner`, `create_project`, `update_project`, `delete_project`
+- `backend/app/modules/projects/service.py` — Implemented `_get_owned_project`, `create_project`, `get_project`, `list_projects`, `update_project`, `delete_project`
+- `backend/app/modules/projects/routes.py` — Implemented 5 CRUD endpoints
+- `backend/app/main.py` — Registered `projects_router`
+- `docs/API_CONTRACT.md` — Added 5 Projects endpoints, updated metadata and error tables
+- `docs/ARCHITECTURE.md` — Marked Projects implemented, updated phase, module org, evolution diagram
+- `docs/Legacy2Next_PROJECT_STATE.md` — Added Session 9, milestone updates
+
+Endpoints Implemented
+
+- `POST /projects` — Create project (201)
+- `GET /projects` — List owned projects (200)
+- `GET /projects/{project_id}` — Get project by ID (200)
+- `PATCH /projects/{project_id}` — Update project fields (200)
+- `DELETE /projects/{project_id}` — Delete project (204)
+
+Architecture Changes
+
+- Projects module follows the established 4-file layout (routes/service/schemas/repository)
+- All four layers fully implemented (matching auth module pattern)
+- Private helper `_get_owned_project` in service layer centralises ownership enforcement
+- No schema changes or database migrations required — uses existing `projects` table from initial migration
+
+Validation Changes
+
+- `ValidationException` (HTTP 400, `VALIDATION_ERROR`) added for PATCH with no fields
+- `NotFoundException` (HTTP 404, `PROJECT_NOT_FOUND`) returned for missing or unowned projects
+- All existing validation patterns preserved
+
+Testing Performed
+
+- Python AST parse verified on all modified files
+- No runtime testing performed (no test suite executed)
+
+Design Decisions
+
+- 404 Not Found hides unowned resources rather than 403 Forbidden — prevents information leakage about other users' project IDs
+- Repository accepts/returns ORM objects (`Project`) rather than dicts — consistent with service layer ownership checks on model attributes
+- `ValidationException` uses 400 rather than 422 — distinguishes application-level validation from Pydantic schema validation
+- No new migration required — the `projects` table was already created with all needed columns in the initial migration
+
+Next
+
+- Upload module implementation (ZIP upload, file extraction, project storage)
+
+---
+
 # Definition of Current State
 
-The project has moved from planning to active development (v0.1.0).
+The project has moved from planning to active development (v0.2.0).
 
-Milestone 1 is in progress with 5 of 6 tasks complete. The backend has a complete authentication system (register, login, JWT, protected endpoint), is containerized via Docker Compose with PostgreSQL 16 Alpine, and has the initial Alembic migration applied. The backend skeleton is fully established with a modular FastAPI structure, SQLAlchemy models, Alembic migrations, and all 8 feature modules scaffolded with routes, services, schemas, and repository separation. Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are recorded in `docs/DECISIONS.md`. The HTTP API is documented in `docs/API_CONTRACT.md` covering all 4 implemented endpoints with schemas, validation rules, error codes, and behaviour origins.
+Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 is in progress with 1 of 3 tasks complete (Project CRUD done). The backend has a complete authentication system (register, login, JWT, protected endpoint) and a complete Projects CRUD module (5 endpoints, ownership-scoped). The application is containerized via Docker Compose with PostgreSQL 16 Alpine, and has the initial Alembic migration applied. Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are recorded in `docs/DECISIONS.md`. The HTTP API is documented in `docs/API_CONTRACT.md` covering all 9 implemented endpoints with schemas, validation rules, error codes, and behaviour origins.
 
-The next session should initialize the frontend — the last remaining Milestone 1 task.
+The next session should implement the Upload module — the remaining Milestone 2 tasks (ZIP upload, file extraction, project storage).
