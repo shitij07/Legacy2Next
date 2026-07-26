@@ -543,7 +543,7 @@ A React + TypeScript + Vite + TailwindCSS application will be initialized in the
 
 | Module | Status |
 |---|---|
-| **Analysis** | In progress. Discovery Engine (FileGraph, IgnoreRules, DiscoveryEngine), Detector Framework (BaseDetector, LanguageDetector, FrameworkDetector, DependencyDetector, extension→language mapping), MetricsCollector, and AnalysisPipeline implemented. Routes, service, schemas, repository stubs exist. Remaining: AnalysisWriter. |
+| **Analysis** | Complete (M4). Discovery Engine, Detector Framework (4 detectors), MetricsCollector, AnalysisPipeline, AnalysisWriter, and API Integration all implemented. 338 tests passing. |
 | **AI** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
 | **Documentation** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist; `generators/` subdirectory present but empty. |
 | **Modernization** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
@@ -606,11 +606,10 @@ Uploads (M3) is now complete. Remaining modules will be implemented in milestone
               └──────────────┘
 ```
 
-✅ = implemented; (disc+det+fwk+dep+metrics+pipeline) = discovery + detector framework + FrameworkDetector + DependencyDetector + MetricsCollector + AnalysisPipeline implemented; everything else is scaffolded.
+✅ = implemented; (analysis complete) = all 7 submodules (discovery, 4 detectors, metrics, pipeline, writer, API integration) implemented and tested; everything else is scaffolded.
 
 ### Next Milestones
 
-- **M4.8 (AnalysisWriter):** AnalysisService integration, database persistence
 - **M5 (AI Integration):** Implement `ai` module — AI-powered project summary, file explanation, documentation generation, recommendations
 - **M6 (Dashboard):** Implement `reports` and `documentation` modules — dashboard endpoints, report generation, documentation viewer, modernization suggestions
 - **M7 (Finalization):** Testing, bug fixes, deployment configuration, remaining documentation

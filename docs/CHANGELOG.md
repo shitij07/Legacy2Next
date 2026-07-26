@@ -42,3 +42,39 @@
 - Structured `DetectorWarning` (not raw strings) enables grouping by detector and future severity support
 - Warnings preserved per-detector — pipeline never merges or rewrites them
 - All 285 tests passing in test_analysis
+
+## 2026-07-26 — M4.8B AnalysisWriter
+
+### Added
+- `backend/app/models/analysis_warning.py` — `AnalysisWarning` model (analysis_id FK, detector_name, message)
+- `backend/app/modules/analysis/writer.py` — `AnalysisWriter` class + `PersistenceResult` dataclass
+- `backend/app/modules/analysis/repository.py` — 6 batch helpers (no commit): `batch_add_files`, `batch_add_technologies`, `batch_add_dependencies`, `batch_add_metrics`, `batch_add_warnings`, `update_analysis_status`
+- `backend/tests/test_analysis/test_writer.py` — 26 tests covering files, technologies, dependencies, metrics (int+str), warnings, error aggregation, determinism, transactional boundary
+
+### Changed
+- `backend/app/models/metric.py` — `value` nullable BigInteger, `value_str` Text(NULL)
+- `backend/app/models/dependency.py` — `source_files` JSON column, `source_files_list` property
+
+### Architecture
+- Writer never commits, never rollbacks — caller owns the transaction
+- Metric invariant: exactly one of `value` (int) or `value_str` populated
+- Dependencies deduped on `(name, ecosystem)`, metrics deduped on `key`
+- Status: `COMPLETED` (no errors) vs `COMPLETED_WITH_ERRORS` (detector errors)
+
+## 2026-07-26 — M4.9B API Integration
+
+### Added
+- `backend/app/modules/analysis/service.py` — `run_analysis(db, user_id, upload_id) → AnalysisResponse` with full orchestration, transaction ownership, lifecycle management
+- `backend/app/modules/analysis/schemas.py` — `AnalysisResponse(analysis_id, status, error_detail)`
+- `backend/app/modules/analysis/routes.py` — `POST /analysis/{upload_id}` endpoint (201)
+- `backend/tests/test_analysis/test_api_integration.py` — 27 tests covering success, ownership validation, error states, status transitions, transaction boundaries
+
+### Changed
+- `backend/app/main.py` — Registered analysis router
+
+### Architecture
+- Service is the sole transaction owner — pipeline and writer never commit
+- Status lifecycle: `RUNNING → COMPLETED | COMPLETED_WITH_ERRORS | FAILED`
+- Best-effort FAILED persistence: rollback main tx, then write FAILED status in new tx
+- Route contains no business logic, pipeline no HTTP knowledge, writer no HTTP knowledge
+- All 338 tests passing in test_analysis

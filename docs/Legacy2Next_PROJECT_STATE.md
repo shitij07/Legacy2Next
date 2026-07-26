@@ -34,19 +34,19 @@ Last Updated: 2026-07-26
 
 # Current Goal
 
-Complete Milestone 4 — Static Analysis by implementing AnalysisWriter.
+Milestone 4 — Static Analysis is complete. Next: Milestone 5 — AI Integration.
 
 ---
 
 # Current Task
 
-- AnalysisWriter / persistence (M4.8)
+- Frontend setup (M1 remaining task)
 
 ---
 
 # Current Focus
 
-The current priority is implementing the AnalysisWriter for database persistence.
+All M4 submodules are implemented and tested (338 tests). Preparing for M5 (AI Integration).
 
 ---
 
@@ -70,12 +70,15 @@ The current priority is implementing the AnalysisWriter for database persistence
 - M4.3B FrameworkDetector: `framework_detector.py` (EvidenceRule hierarchy: JsonDependencyRule, XmlDependencyRule, TomlDependencyRule, LineDependencyRule, FileExistsRule; FrameworkDefinition with 32 definitions across 4 categories; FrameworkDetector with two-phase design, confidence merging, deduplication), `test_framework_detector.py` (45 tests covering all rule types, framework detection, edge cases), all 114 tests in test_analysis pass
 - M4.5B DependencyDetector: `dependency_detector.py` (closed ManifestParser hierarchy with 9 parsers: PackageJsonParser, RequirementsParser, PyProjectParser, PomParser, GradleParser, CargoParser, ComposerParser, GemfileParser, CsProjParser; _RawDependency intermediate model; _PARSER_REGISTRY data-driven dict; _merge_deduplicate with version conflict warning; canonical category mapping; graceful degradation), `DetectedDependency` updated (source_files tuple, category field), `test_dependency_detector.py` (93 tests across 12 test classes covering all parsers, registry, dedup, integration), all 207 tests in test_analysis pass
 - M4.6B MetricsCollector: `metrics_collector.py` (single `MetricsCollector` class with private helpers, pure aggregation from `AnalysisResults` only, zero I/O, deterministic output), `metric_keys.py` (`MetricKey(StrEnum)` with 7 stable constants, dynamic `dependencies.<ecosystem>` keys), `DetectedMetric.value` widened from `int` to `int | str` to support string metrics like `primary_language`, `test_metrics_collector.py` (51 tests across 14 test classes covering empty results, file counts, language counting, primary language with alphabetical tie-breaking, framework counting, dependency counting, ecosystem grouping, manifest counting, determinism, result integrity, integration, MetricKey enum), all 258 tests in test_analysis pass
+- M4.7B AnalysisPipeline: `pipeline.py` (pure orchestration: DiscoveryEngine → detectors → MetricsCollector, constructor injection, failure isolation, sequential execution, deterministic output), `types.py` extended (DetectorWarning, DetectorResult.warnings), 27 tests, 285 total
+- M4.8B AnalysisWriter: `writer.py` (AnalysisWriter class writing files, technologies, dependencies, metrics, warnings, status), `repository.py` (6 batch helpers, no commit), `analysis_warning.py` model, `test_writer.py` (26 tests covering all write operations, error aggregation, determinism, transactional boundary), 311 total
+- M4.9B API Integration: `service.py` (run_analysis with transaction ownership, upload validation, pipeline construction, lifecycle management), `schemas.py` (AnalysisResponse), `routes.py` (POST /analysis/{upload_id}), `test_api_integration.py` (27 tests covering success, ownership, error states, status transitions, rollback), 338 total
 
 ---
 
 # In Progress
 
-Milestone 4 — Static Analysis (M4 infrastructure, discovery, detector framework, LanguageDetector, FrameworkDetector, DependencyDetector, MetricsCollector complete)
+(none — all milestones complete through M4)
 
 ---
 
@@ -87,7 +90,8 @@ None.
 
 # Next Tasks
 
-1. Implement AnalysisWriter and pipeline orchestration
+1. Frontend setup (remaining M1 task)
+2. Milestone 5 — AI Integration
 
 ---
 
@@ -142,7 +146,7 @@ Tasks
 
 ## Milestone 4 — Static Analysis
 
-Status: In Progress
+Status: Complete (338 tests passing)
 
 ### M4.1 — Infrastructure
 
@@ -194,11 +198,23 @@ Status: In Progress
 - [x] Sequential execution, failure isolation, deterministic output
 - [x] 27 tests passing (285 total in test_analysis)
 
-### M4.8 — AnalysisWriter & Pipeline
+### M4.8 — AnalysisWriter
 
-- [ ] Pipeline orchestration
-- [ ] AnalysisService integration
-- [ ] Database persistence
+- [x] writer.py (AnalysisWriter — files, technologies, dependencies, metrics, warnings, status)
+- [x] repository.py (6 batch helpers, no commit)
+- [x] analysis_warning.py model
+- [x] PersistenceResult dataclass
+- [x] Metric invariant: exactly one of value (int) or value_str populated
+- [x] 26 tests passing (311 total in test_analysis)
+
+### M4.9 — API Integration
+
+- [x] service.py (run_analysis — transaction owner, pipeline construction, lifecycle management)
+- [x] schemas.py (AnalysisResponse with analysis_id, status, error_detail)
+- [x] routes.py (POST /analysis/{upload_id}, 201)
+- [x] main.py (analysis router registered)
+- [x] Status lifecycle: RUNNING → COMPLETED | COMPLETED_WITH_ERRORS | FAILED
+- [x] 27 tests passing (338 total in test_analysis)
 
 ---
 
@@ -896,16 +912,118 @@ Architecture Decisions
 - Warnings are preserved per-detector on DetectorResult — pipeline does not merge, rewrite, or inspect them
 - Timestamps recorded at start and end of analyze() — no per-detector timing in the pipeline
 
+---
+
+## Session 16 — 2026-07-26
+
+Completed
+
+- Implemented AnalysisWriter (`backend/app/modules/analysis/writer.py`) — `AnalysisWriter` class with 6 write methods (files, technologies, dependencies, metrics, warnings, status), `PersistenceResult` dataclass collecting per-category error counts
+- Created AnalysisWarning model (`backend/app/models/analysis_warning.py`) — FK to analyses table, detector_name and message columns
+- Created AnalysisRepository (`backend/app/modules/analysis/repository.py`) — 6 batch helper functions: `batch_add_files`, `batch_add_technologies`, `batch_add_dependencies`, `batch_add_metrics`, `batch_add_warnings`, `update_analysis_status` — none commit, caller owns the transaction
+- Widened Metric.value from `int` to `BigInteger` with nullable `value` (int) and `value_str` (Text) columns — exactly one populated per record
+- Added `source_files` JSON column to Dependency model with `source_files_list` property accessor
+- Created 26 tests in `test_writer.py` across 7 test classes: empty results, complete results, metrics (int+str+mixed), warnings (detector errors vs warnings), error aggregation single/multiple, deterministic output, transactional boundary (no commit, no rollback)
+- Updated MetricKey references in existing tests for the value/value_str invariant
+
+Files Created
+
+- `backend/app/modules/analysis/writer.py` — AnalysisWriter + PersistenceResult
+- `backend/app/models/analysis_warning.py` — AnalysisWarning model
+- `backend/app/modules/analysis/repository.py` — 6 batch helpers
+- `backend/tests/test_analysis/test_writer.py` — 26 tests
+
+Files Modified
+
+- `backend/app/models/metric.py` — value: BigInteger (nullable), value_str: Text
+- `backend/app/models/dependency.py` — source_files: JSON, source_files_list property
+- `backend/app/modules/analysis/types.py` — (no changes)
+- `docs/CHANGELOG.md` — M4.8B entry
+- `docs/ARCHITECTURE.md` — (updated)
+- `docs/Legacy2Next_PROJECT_STATE.md` — This session
+
+Testing Performed
+
+- 311 tests in test_analysis: 26 new writer tests + 285 existing tests, all passing
+
+Architecture Decisions
+
+- Writer never commits, never rollbacks — caller owns the transaction boundary
+- Metric invariant: exactly one of `value` or `value_str` populated; enforced by application logic
+- Dependencies deduped on `(name, ecosystem)`; metrics deduped on `key`
+- Status: `COMPLETED` (no errors) vs `COMPLETED_WITH_ERRORS` (detector errors during pipeline)
+- `PersistenceResult` collects per-category error counts — non-zero means partial write, but caller decides action
+
 Next
 
-- AnalysisWriter implementation and persistence
+- API Integration for analysis endpoint
+
+---
+
+## Session 17 — 2026-07-26
+
+Completed
+
+- Implemented AnalysisService (`backend/app/modules/analysis/service.py`) — `run_analysis(db, user_id, upload_id) → AnalysisResponse` with full orchestration:
+  - Upload ownership and project association validation
+  - Analysis record creation (status=RUNNING, flush)
+  - Pipeline construction with all 3 detectors (language, framework, dependency)
+  - Pipeline execution → writer persistence → commit
+  - On pipeline/writer exception: rollback + best-effort FAILED status persistence in a new transaction
+  - Lifecycle logging (start, progress, completion, warnings, errors)
+- Created AnalysisResponse schema (`backend/app/modules/analysis/schemas.py`) — `analysis_id: int`, `status: str`, `error_detail: str | None`
+- Created analysis route (`backend/app/modules/analysis/routes.py`) — `POST /analysis/{upload_id}` with `get_current_user` and `get_db` dependencies, delegates entirely to `analysis_service.run_analysis()`
+- Registered analysis router in `app/main.py` — included first, before auth router
+- Created 27 integration tests in `test_api_integration.py` across 8 test classes:
+  - Successful analysis (status=COMPLETED, analysis_id returned, response fields)
+  - Upload not found (404), upload not owned (404), upload has no project (symmetry)
+  - COMPLETED_WITH_ERRORS (pipeline with a failing detector — status set correctly, error_detail populated)
+  - FAILED status from pipeline exception → rollback → FAILED
+  - FAILED status from writer exception → rollback → FAILED
+  - Transaction ownership verified (commit on success, rollback on failure, no orphan Analysis records)
+  - AnalysisResponse correctness (analysis_id matches DB, status matches, error_detail shape)
+  - End-to-end flow (upload → discovery → all detectors → metrics → persist → response)
+  - Determinism (identical second run returns same results)
+  - Concurrent analyses (two independent uploads analyzed simultaneously)
+
+Files Created
+
+- `backend/app/modules/analysis/service.py` — run_analysis()
+- `backend/app/modules/analysis/schemas.py` — AnalysisResponse
+- `backend/app/modules/analysis/routes.py` — POST endpoint
+- `backend/tests/test_analysis/test_api_integration.py` — 27 tests
+
+Files Modified
+
+- `backend/app/main.py` — Registered analysis_router
+- `backend/app/conftest.py` — (added session fixture for integration tests)
+- `docs/CHANGELOG.md` — M4.9B entry
+- `docs/ARCHITECTURE.md` — (updated)
+- `docs/Legacy2Next_PROJECT_STATE.md` — This session
+
+Testing Performed
+
+- 338 tests in test_analysis: 27 new API integration tests + 311 existing tests, all passing
+
+Architecture Decisions
+
+- Service is the sole transaction owner — pipeline and writer never commit or rollback
+- Best-effort FAILED persistence in a new transaction after rollback — uses same db session, wrapped in try/except
+- Route contains zero business logic — pure delegation to service
+- Pipeline uses db session from service (after flush, analysis.id is available) — no separate write-back step
+- AnalysisResponse is a flat Pydantic model — no PersistenceResult or AnalysisResults leakage to API
+- Future async migration: the `run_analysis` body is a pure function sequence extractable to a background worker
+
+Next
+
+- Milestone 5 — AI Integration planning
+
+---
 
 # Definition of Current State
 
-The project has reached v0.4.0 with Milestone 4 (Static Analysis) actively in progress.
+Milestone 4 (Static Analysis) is **complete** with all 9 submodules implemented and tested (338 tests). Milestone 1 has 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete.
 
-Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete. Milestone 4 is in progress: M4.1 Infrastructure complete, M4.2 Discovery Engine complete, M4.3 Detector Framework & LanguageDetector complete, M4.4 FrameworkDetector complete, M4.5 DependencyDetector complete, M4.6 MetricsCollector complete, M4.7 AnalysisPipeline complete. Remaining: M4.8 AnalysisWriter.
+The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), and Analysis module (14 endpoints) with Discovery Engine, Detector Framework (4 detectors: language, framework, dependency), MetricsCollector, AnalysisPipeline, AnalysisWriter, and API Integration (`POST /analysis/{upload_id}`). The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 base tables + 6 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
 
-The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), Discovery Engine (os.walk with deterministic sorting, ignore rules, FileGraph), Detector Framework (BaseDetector ABC, LanguageDetector, FrameworkDetector, DependencyDetector), MetricsCollector (pure aggregation from AnalysisResults), AnalysisPipeline (orchestration with failure isolation), and extension→language mapping. The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 tables + 5 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
-
-The next session should implement AnalysisWriter.
+The next session should begin Milestone 5 (AI Integration) planning and implementation.
