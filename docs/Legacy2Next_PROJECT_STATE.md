@@ -24,7 +24,7 @@ Current Phase: Development
 
 Current Sprint: Sprint 4 - Static Analysis
 
-Overall Progress: 50%
+Overall Progress: 55%
 
 Status: In Progress
 
@@ -34,19 +34,19 @@ Last Updated: 2026-07-26
 
 # Current Goal
 
-Milestone 4 — Static Analysis is complete. Next: Milestone 5 — AI Integration.
+Milestone 5 — AI Integration (M5.1 Analysis Retrieval complete).
 
 ---
 
 # Current Task
 
-- Frontend setup (M1 remaining task)
+- AI Project Summary and module implementation (M5.2)
 
 ---
 
 # Current Focus
 
-All M4 submodules are implemented and tested (338 tests). Preparing for M5 (AI Integration).
+Analysis retrieval API is implemented (407 tests). Moving to AI Integration for project summary generation.
 
 ---
 
@@ -73,12 +73,13 @@ All M4 submodules are implemented and tested (338 tests). Preparing for M5 (AI I
 - M4.7B AnalysisPipeline: `pipeline.py` (pure orchestration: DiscoveryEngine → detectors → MetricsCollector, constructor injection, failure isolation, sequential execution, deterministic output), `types.py` extended (DetectorWarning, DetectorResult.warnings), 27 tests, 285 total
 - M4.8B AnalysisWriter: `writer.py` (AnalysisWriter class writing files, technologies, dependencies, metrics, warnings, status), `repository.py` (6 batch helpers, no commit), `analysis_warning.py` model, `test_writer.py` (26 tests covering all write operations, error aggregation, determinism, transactional boundary), 311 total
 - M4.9B API Integration: `service.py` (run_analysis with transaction ownership, upload validation, pipeline construction, lifecycle management), `schemas.py` (AnalysisResponse), `routes.py` (POST /analysis/{upload_id}), `test_api_integration.py` (27 tests covering success, ownership, error states, status transitions, rollback), 338 total
+- M5.1B Analysis Retrieval: `query_service.py` (AnalysisQueryService with 8 retrieval methods), `schemas.py` (8 DTOs + PaginatedResponse), `routes.py` (8 GET endpoints), `repository.py` (9 paginated/filtered read methods), `test_query_api.py` (69 tests covering summary, files, technologies, dependencies, metrics, warnings, project/upload listing, pagination, filtering, sorting, ownership, DTO mapping, determinism, no-writes), 407 total
 
 ---
 
 # In Progress
 
-(none — all milestones complete through M4)
+Milestone 5 — AI Integration (M5.1 Analysis Retrieval complete)
 
 ---
 
@@ -90,8 +91,7 @@ None.
 
 # Next Tasks
 
-1. Frontend setup (remaining M1 task)
-2. Milestone 5 — AI Integration
+1. AI Integration — Project Summary (M5.2)
 
 ---
 
@@ -218,12 +218,26 @@ Status: Complete (338 tests passing)
 
 ---
 
+### M5.1 — Analysis Retrieval
+
+- [x] query_service.py (AnalysisQueryService — 8 retrieval methods)
+- [x] schemas.py (8 DTOs + PaginatedResponse[T])
+- [x] routes.py (8 GET endpoints in existing router)
+- [x] repository.py (9 paginated/filtered read methods)
+- [x] Ownership validation on all endpoints
+- [x] Pagination (offset/limit), filtering, sorting
+- [x] DTOs isolate API from ORM
+- [x] 69 tests passing (407 total in test_analysis)
+
+---
+
 ## Milestone 5 — AI Integration
 
-Status: Not Started
+Status: In Progress (M5.1 complete)
 
 Tasks
 
+- [x] M5.1 Analysis Retrieval API
 - [ ] AI Project Summary
 - [ ] AI File Explanation
 - [ ] AI Documentation
@@ -1014,6 +1028,47 @@ Architecture Decisions
 - AnalysisResponse is a flat Pydantic model — no PersistenceResult or AnalysisResults leakage to API
 - Future async migration: the `run_analysis` body is a pure function sequence extractable to a background worker
 
+---
+
+## Session 18 — 2026-07-26
+
+Completed
+
+- Created AnalysisQueryService (`backend/app/modules/analysis/query_service.py`) — 8 retrieval methods: `get_analysis_summary`, `get_analysis_files`, `get_analysis_technologies`, `get_analysis_dependencies`, `get_analysis_metrics`, `get_analysis_warnings`, `list_project_analyses`, `list_upload_analyses`
+- Extended repository.py with 9 new read methods: `list_analysis_files_paginated`, `count_analysis_files`, `list_analysis_technologies_with_tech` (with joinedload), `list_dependencies_paginated`, `count_dependencies`, `list_warnings_paginated`, `count_warnings`, `list_analyses_by_project_paginated`, `list_analyses_by_upload_paginated`
+- Added 8 response DTOs to schemas.py: `AnalysisSummaryResponse`, `AnalysisFileResponse`, `AnalysisTechnologyResponse`, `AnalysisDependencyResponse`, `AnalysisMetricResponse`, `AnalysisWarningResponse`, `AnalysisListItem`, `PaginatedResponse[T]`
+- Extended routes.py with 8 GET endpoints: `GET /analysis/{id}` (summary), `/analysis/{id}/files`, `/analysis/{id}/technologies`, `/analysis/{id}/dependencies`, `/analysis/{id}/metrics`, `/analysis/{id}/warnings`, `/analysis/project/{id}`, `/analysis/upload/{id}`
+- All routes in existing `routes.py` (no new router) — literal paths (project/upload) registered before path params to avoid routing conflicts
+- Created 69 tests in test_query_api.py covering: summary endpoint (9 tests), files (8), technologies (6), dependencies (9), metrics (7), warnings (6), project analyses (7), upload analyses (6), ownership validation (2), DTO mapping (3), deterministic ordering (2), no-writes verification (2), empty analysis (1)
+
+Files Created
+
+- `backend/app/modules/analysis/query_service.py` — AnalysisQueryService
+- `backend/tests/test_analysis/test_query_api.py` — 69 tests
+
+Files Modified
+
+- `backend/app/modules/analysis/repository.py` — Added 9 paginated/filtered read methods with sort and count helpers
+- `backend/app/modules/analysis/schemas.py` — Added 8 response DTOs + PaginatedResponse
+- `backend/app/modules/analysis/routes.py` — Added 8 GET endpoints
+- `docs/ARCHITECTURE.md` — AnalysisQueryService section, updated folder structure, component table, test listing, milestone evolution
+- `docs/CHANGELOG.md` — M5.1B entry
+- `docs/Legacy2Next_PROJECT_STATE.md` — This session
+
+Testing Performed
+
+- 407 tests in test_analysis: 69 new query API tests + 338 existing tests, all passing
+
+Architecture Decisions
+
+- Read/write separation: AnalysisQueryService is completely independent from AnalysisService (no shared imports beyond repository + models)
+- Repositories remain CRUD-only: joins and aggregation happen in the service layer
+- Ownership validation walks FK chain: Analysis → Upload → Project → user_id
+- Pagination uses offset/limit (page/size) — cursor pagination deferred until dataset grows
+- Technologies and metrics return flat lists (unbounded, small datasets); files, dependencies, warnings paginated
+- Literal path segments (project, upload) registered before path parameters to prevent Starlette routing conflicts
+- DTOs isolate API from ORM — all 8 responses are Pydantic models with `from_attributes=True`
+
 Next
 
 - Milestone 5 — AI Integration planning
@@ -1022,8 +1077,8 @@ Next
 
 # Definition of Current State
 
-Milestone 4 (Static Analysis) is **complete** with all 9 submodules implemented and tested (338 tests). Milestone 1 has 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete.
+Milestone 4 (Static Analysis) is **complete** with all 9 submodules implemented and tested. Milestone 5.1 (Analysis Retrieval) is also **complete**. Total: 407 tests in test_analysis, zero failures. Milestone 1 has 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete.
 
-The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), and Analysis module (14 endpoints) with Discovery Engine, Detector Framework (4 detectors: language, framework, dependency), MetricsCollector, AnalysisPipeline, AnalysisWriter, and API Integration (`POST /analysis/{upload_id}`). The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 base tables + 6 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
+The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), and Analysis module (14 endpoints — 6 POST + 8 GET) with Discovery Engine, Detector Framework (4 detectors), MetricsCollector, AnalysisPipeline, AnalysisWriter, API Integration, and Retrieval API. The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 base tables + 6 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
 
-The next session should begin Milestone 5 (AI Integration) planning and implementation.
+The next session should begin Milestone 5.2 (AI Integration) planning and implementation.

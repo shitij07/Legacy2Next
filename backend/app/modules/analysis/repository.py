@@ -1,6 +1,8 @@
 import datetime
+import math
 
-from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.analysis import Analysis
 from app.models.analysis_file import AnalysisFile
@@ -233,3 +235,161 @@ def update_analysis_status(
     if completed_at is not None:
         analysis.completed_at = completed_at
     return analysis
+
+
+# ─── Read-only query helpers ─────────────────────────────────────────
+
+
+_FILE_SORT_FIELDS = {
+    "relative_path": AnalysisFile.relative_path,
+    "file_size": AnalysisFile.file_size,
+    "extension": AnalysisFile.extension,
+    "language": AnalysisFile.language,
+}
+
+_DEP_SORT_FIELDS = {
+    "name": Dependency.name,
+    "ecosystem": Dependency.ecosystem,
+    "type": Dependency.type,
+}
+
+_TECH_SORT_FIELDS = {
+    "name": Technology.name,
+    "category": Technology.category,
+    "confidence": AnalysisTechnology.confidence,
+}
+
+_WARNING_SORT_FIELDS = {
+    "created_at": AnalysisWarning.created_at,
+    "detector_name": AnalysisWarning.detector_name,
+}
+
+_ANALYSIS_SORT_FIELDS = {
+    "created_at": Analysis.created_at,
+    "status": Analysis.status,
+}
+
+
+def _apply_sort(query, model_field_map: dict, sort_by: str, sort_dir: str):
+    column = model_field_map.get(sort_by)
+    if column is None:
+        sort_by = next(iter(model_field_map.keys()))
+        column = model_field_map[sort_by]
+    if sort_dir == "desc":
+        return query.order_by(column.desc())
+    return query.order_by(column.asc())
+
+
+def _paginate(query, page: int, size: int):
+    total = query.count()
+    pages = max(1, math.ceil(total / size))
+    items = query.offset((page - 1) * size).limit(size).all()
+    return items, total, pages
+
+
+def list_analysis_files_paginated(
+    db: Session,
+    analysis_id: int,
+    page: int = 1,
+    size: int = 50,
+    extension: str | None = None,
+    language: str | None = None,
+    is_directory: bool | None = None,
+    sort_by: str = "relative_path",
+    sort_dir: str = "asc",
+):
+    query = db.query(AnalysisFile).filter(AnalysisFile.analysis_id == analysis_id)
+    if extension is not None:
+        query = query.filter(AnalysisFile.extension == extension)
+    if language is not None:
+        query = query.filter(AnalysisFile.language == language)
+    if is_directory is not None:
+        query = query.filter(AnalysisFile.is_directory == is_directory)
+    query = _apply_sort(query, _FILE_SORT_FIELDS, sort_by, sort_dir)
+    return _paginate(query, page, size)
+
+
+def count_analysis_files(db: Session, analysis_id: int) -> int:
+    return db.query(func.count(AnalysisFile.id)).filter(AnalysisFile.analysis_id == analysis_id).scalar() or 0
+
+
+def list_analysis_technologies_with_tech(db: Session, analysis_id: int):
+    return (
+        db.query(AnalysisTechnology)
+        .options(joinedload(AnalysisTechnology.technology))
+        .filter(AnalysisTechnology.analysis_id == analysis_id)
+        .all()
+    )
+
+
+def list_dependencies_paginated(
+    db: Session,
+    analysis_id: int,
+    page: int = 1,
+    size: int = 50,
+    ecosystem: str | None = None,
+    type: str | None = None,
+    sort_by: str = "name",
+    sort_dir: str = "asc",
+):
+    query = db.query(Dependency).filter(Dependency.analysis_id == analysis_id)
+    if ecosystem is not None:
+        query = query.filter(Dependency.ecosystem == ecosystem)
+    if type is not None:
+        query = query.filter(Dependency.type == type)
+    query = _apply_sort(query, _DEP_SORT_FIELDS, sort_by, sort_dir)
+    return _paginate(query, page, size)
+
+
+def count_dependencies(db: Session, analysis_id: int) -> int:
+    return db.query(func.count(Dependency.id)).filter(Dependency.analysis_id == analysis_id).scalar() or 0
+
+
+def list_warnings_paginated(
+    db: Session,
+    analysis_id: int,
+    page: int = 1,
+    size: int = 50,
+    detector_name: str | None = None,
+    sort_by: str = "created_at",
+    sort_dir: str = "desc",
+):
+    query = db.query(AnalysisWarning).filter(AnalysisWarning.analysis_id == analysis_id)
+    if detector_name is not None:
+        query = query.filter(AnalysisWarning.detector_name == detector_name)
+    query = _apply_sort(query, _WARNING_SORT_FIELDS, sort_by, sort_dir)
+    return _paginate(query, page, size)
+
+
+def count_warnings(db: Session, analysis_id: int) -> int:
+    return db.query(func.count(AnalysisWarning.id)).filter(AnalysisWarning.analysis_id == analysis_id).scalar() or 0
+
+
+def list_analyses_by_project_paginated(
+    db: Session,
+    project_id: int,
+    page: int = 1,
+    size: int = 20,
+    sort_by: str = "created_at",
+    sort_dir: str = "desc",
+):
+    query = (
+        db.query(Analysis)
+        .join(Upload)
+        .filter(Upload.project_id == project_id)
+    )
+    query = _apply_sort(query, _ANALYSIS_SORT_FIELDS, sort_by, sort_dir)
+    return _paginate(query, page, size)
+
+
+def list_analyses_by_upload_paginated(
+    db: Session,
+    upload_id: int,
+    page: int = 1,
+    size: int = 20,
+    sort_by: str = "created_at",
+    sort_dir: str = "desc",
+):
+    query = db.query(Analysis).filter(Analysis.upload_id == upload_id)
+    query = _apply_sort(query, _ANALYSIS_SORT_FIELDS, sort_by, sort_dir)
+    return _paginate(query, page, size)

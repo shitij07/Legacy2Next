@@ -78,3 +78,26 @@
 - Best-effort FAILED persistence: rollback main tx, then write FAILED status in new tx
 - Route contains no business logic, pipeline no HTTP knowledge, writer no HTTP knowledge
 - All 338 tests passing in test_analysis
+
+## 2026-07-26 — M5.1B Analysis Retrieval
+
+### Added
+- `backend/app/modules/analysis/query_service.py` — `AnalysisQueryService` with 8 retrieval methods: `get_analysis_summary`, `get_analysis_files`, `get_analysis_technologies`, `get_analysis_dependencies`, `get_analysis_metrics`, `get_analysis_warnings`, `list_project_analyses`, `list_upload_analyses`
+- `backend/app/modules/analysis/schemas.py` — 8 new DTOs: `AnalysisSummaryResponse`, `AnalysisFileResponse`, `AnalysisTechnologyResponse`, `AnalysisDependencyResponse`, `AnalysisMetricResponse`, `AnalysisWarningResponse`, `AnalysisListItem`, `PaginatedResponse[T]`
+- `backend/app/modules/analysis/repository.py` — 8 new read methods: `list_analysis_files_paginated`, `count_analysis_files`, `list_analysis_technologies_with_tech`, `list_dependencies_paginated`, `count_dependencies`, `list_warnings_paginated`, `count_warnings`, `list_analyses_by_project_paginated`, `list_analyses_by_upload_paginated`
+- `backend/tests/test_analysis/test_query_api.py` — 69 tests across 14 test classes
+
+### Changed
+- `backend/app/modules/analysis/routes.py` — Added 8 GET endpoints: `GET /analysis/{id}`, `/analysis/{id}/files`, `/analysis/{id}/technologies`, `/analysis/{id}/dependencies`, `/analysis/{id}/metrics`, `/analysis/{id}/warnings`, `/analysis/project/{id}`, `/analysis/upload/{id}`
+- `docs/ARCHITECTURE.md` — Added AnalysisQueryService documentation, updated folder structure, test listing, component table
+- `docs/Legacy2Next_PROJECT_STATE.md` — Added Session 18, updated test counts, milestone progress
+
+### Architecture
+- AnalysisQueryService is read-only — never writes, commits, rollbacks, or flushes
+- Read/write path separation: AnalysisQueryService and AnalysisService share only the repository layer
+- Repositories remain persistence-only: paginated queries return ORM models, no joins, no aggregation
+- DTOs isolate API from ORM — all 8 responses are Pydantic models, never ORM entities
+- Ownership validation on every GET endpoint via `_get_owned_analysis` (walk: Analysis → Upload → Project → user_id)
+- Pagination: offset/limit (page/size), 3 default sizes (20 for list, 50 for sub-resources)
+- Deterministic defaults: files by relative_path asc, deps by name asc, warnings by created_at desc
+- All 407 tests passing in test_analysis

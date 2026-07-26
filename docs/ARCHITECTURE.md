@@ -18,7 +18,7 @@
 
 Legacy2Next is a FastAPI backend for legacy software analysis and modernization. At v0.4.0 the backend has a complete authentication system, a Projects CRUD module with ownership scoping, an Uploads module with file storage and quota management, a Discovery Engine, a Detector Framework with LanguageDetector, FrameworkDetector, and DependencyDetector, a PostgreSQL database with Alembic migrations, Docker Compose orchestration, and a storage abstraction layer. The auth, projects, uploads, and analysis (discovery + detector framework) modules are partially implemented; the remaining modules are stubs awaiting their milestone.
 
-**Phase:** Development (Milestone 4 — Static Analysis in progress).
+**Phase:** Development (Milestone 4 — Static Analysis complete).
 
 **What exists today:**
 
@@ -38,7 +38,7 @@ Legacy2Next is a FastAPI backend for legacy software analysis and modernization.
 | Dockerfile (python:3.12-slim, pip install) | Implemented |
 | pyproject.toml (PEP 621, uv-compatible) | Implemented |
 | Test scaffolding (pytest, TestClient, 8 test directories) | Scaffolded |
-| 5 remaining modules (analysis, ai, documentation, modernization, reports) | Scaffolded — routes/services/schemas/repository stubs |
+| 4 remaining modules (ai, documentation, modernization, reports) | Scaffolded — routes/services/schemas/repository stubs |
 | Frontend (React + TypeScript + Vite) | Not initialized |
 | Background workers, integrations | Placeholder directories |
 
@@ -74,7 +74,7 @@ backend/
 │   │   ├── auth/                        # Fully implemented (routes, service, schemas, repository)
 │   │   ├── projects/                    # Fully implemented (routes, service, schemas, repository)
 │   │   ├── uploads/                     # Fully implemented (routes, service, schemas, repository, quota)
-│   │   ├── analysis/                    # Implemented: discovery, ignore_rules, base, types, utils, language_detector, framework_detector, dependency_detector, metrics_collector, pipeline (+ detectors/ subdirectory stubs)
+│   │   ├── analysis/                    # Fully implemented: discovery, ignore_rules, base, types, utils, detectors, metrics_collector, pipeline, writer, repository, service, query_service, schemas, routes
 │   │   ├── ai/                          # Scaffolded
 │   │   ├── documentation/               # Scaffolded (+ generators/ subdirectory stubs)
 │   │   ├── modernization/               # Scaffolded
@@ -102,7 +102,10 @@ backend/
 │   │   ├── test_framework_detector.py   # 45 tests (FrameworkDetector, EvidenceRule hierarchy)
 │   │   ├── test_dependency_detector.py   # 93 tests (DependencyDetector, 9 parsers, dedup)
 │   │   ├── test_metrics_collector.py     # 51 tests (MetricsCollector)
-│   │   └── test_pipeline.py              # 27 tests (AnalysisPipeline)
+│   │   ├── test_pipeline.py              # 27 tests (AnalysisPipeline)
+│   │   ├── test_writer.py                # 26 tests (AnalysisWriter)
+│   │   ├── test_api_integration.py       # 27 tests (POST /analysis/{upload_id})
+│   │   └── test_query_api.py             # 69 tests (GET endpoints, pagination, filtering, sorting, ownership)
 │   ├── test_ai/                         # Empty __init__.py
 │   ├── test_documentation/              # Empty __init__.py
 │   ├── test_modernization/              # Empty __init__.py
@@ -169,6 +172,43 @@ class MetricKey(StrEnum):
 Dynamic ecosystem keys follow the pattern `f"dependencies.{ecosystem}"`.
 
 `DetectedMetric.value` supports `int | str` (widened from `int` in M4.6B) to accommodate string-valued metrics like `languages.primary = "Python"`.
+
+### AnalysisQueryService — Read Layer
+
+`AnalysisQueryService` provides the read/query API for persisted analysis results. It is completely independent from `AnalysisService` (write path) — they share only the repository layer and ORM models.
+
+```
+Client (GET)
+     │
+     ▼
+AnalysisQueryService
+     │
+     ├── get_analysis_summary()        → AnalysisSummaryResponse
+     ├── get_analysis_files()          → PaginatedResponse[AnalysisFileResponse]
+     ├── get_analysis_technologies()   → list[AnalysisTechnologyResponse]
+     ├── get_analysis_dependencies()   → PaginatedResponse[AnalysisDependencyResponse]
+     ├── get_analysis_metrics()        → list[AnalysisMetricResponse]
+     ├── get_analysis_warnings()       → PaginatedResponse[AnalysisWarningResponse]
+     ├── list_project_analyses()       → PaginatedResponse[AnalysisListItem]
+     └── list_upload_analyses()        → PaginatedResponse[AnalysisListItem]
+```
+
+**Ownership validation:** Every method calls `_get_owned_analysis()` which walks the FK chain (`Analysis → Upload → Project → user_id`) and raises `NotFoundException("Analysis")` if missing or unowned.
+
+**Never writes:** `AnalysisQueryService` never calls `db.commit()`, `db.rollback()`, or `db.flush()`. All repository read methods are SELECT-only.
+
+**DTO construction:** All response models are Pydantic DTOs — never ORM entities. Technologies are denormalized (join `AnalysisTechnology` → `Technology` to expose `name` and `category`). Dependencies deserialize their `source_files` JSON column into `list[str]`.
+
+**Pagination:** Three paginated resources (files, dependencies, warnings) use offset/limit with configurable sort. Two flat-list resources (technologies, metrics) return unbounded lists. All paginated responses include `items`, `total`, `page`, `size`, `pages`.
+
+**Filters:**
+| Resource | Filters |
+|---|---|
+| Files | `extension`, `language`, `is_directory` |
+| Dependencies | `ecosystem`, `type` |
+| Warnings | `detector_name` |
+
+**Sorting:** Deterministic defaults — files by `relative_path` asc, dependencies by `name` asc, warnings by `created_at` desc, analysis lists by `created_at` desc.
 
 ### Module-internal convention
 
@@ -543,7 +583,7 @@ A React + TypeScript + Vite + TailwindCSS application will be initialized in the
 
 | Module | Status |
 |---|---|
-| **Analysis** | Complete (M4). Discovery Engine, Detector Framework (4 detectors), MetricsCollector, AnalysisPipeline, AnalysisWriter, and API Integration all implemented. 338 tests passing. |
+| **Analysis** | Complete (M4 + M5.1). Discovery Engine, Detector Framework (4 detectors), MetricsCollector, AnalysisPipeline, AnalysisWriter, API Integration, and Retrieval API all implemented. 407 tests passing. |
 | **AI** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
 | **Documentation** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist; `generators/` subdirectory present but empty. |
 | **Modernization** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
@@ -570,43 +610,43 @@ Uploads (M3) is now complete. Remaining modules will be implemented in milestone
 
 ## Architecture Evolution
 
-### Current Milestone — Milestone 4
+### Current Milestone — Milestone 5
 
 ```
-                                                                   ┌──────────────┐
-                                                                   │   Frontend   │
-                                                                   │  (not yet)   │
-                                                                   └──────────────┘
-                                                                          │
-                                                                          ▼
-┌──────────┐     ┌──────────────────────────────────────────────────────────┐
-│  Client   │────▶                    FastAPI Backend                       │
-│ (curl/   │     ├──────────┬──────────┬──────────┬──────────┬─────────────┤
-│  Swagger)│     │  Core    │   Auth   │ Project  │ Uploads  │  Analysis      │
-└──────────┘     │  Layer   │   ✅     │   ✅     │   ✅                       │  (disc+det+fwk+dep)│
-                 ├──────────┤          │          │          ├─────────────┤
-                 │ Config   │          │          │          │   AI        │
-                 │ Database │          │          │          │  (stub)     │
-                 │ Security │          │          │          ├─────────────┤
-                 │ Exceptions│         │          │          │ Documentation│
-                 │ Deps     │          │          │          │  (stub)     │
-                 ├──────────┤          │          │          ├─────────────┤
-                 │ Models   │          │          │          │ Modernization│
-                 │ (User,   │          │          │          │  (stub)     │
-                 │ Project, │          │          │          ├─────────────┤
-                 │ Upload,  │          │          │          │  Reports    │
-                 │ Analysis,│          │          │          │  (stub)     │
-                 │ Report)  │          │          │          │             │
-                 └──────────┴──────────┴──────────┴──────────┴─────────────┘
-                      │
-                      ▼
-              ┌──────────────┐
-              │  PostgreSQL  │
-              │  (Docker)    │
-              └──────────────┘
+                                                                    ┌──────────────┐
+                                                                    │   Frontend   │
+                                                                    │  (not yet)   │
+                                                                    └──────────────┘
+                                                                           │
+                                                                           ▼
+ ┌──────────┐     ┌──────────────────────────────────────────────────────────┐
+ │  Client   │────▶                    FastAPI Backend                       │
+ │ (curl/   │     ├──────────┬──────────┬──────────┬──────────┬─────────────┤
+ │  Swagger)│     │  Core    │   Auth   │ Project  │ Uploads  │  Analysis   │
+ └──────────┘     │  Layer   │   ✅     │   ✅     │   ✅      │   ✅        │
+                  ├──────────┤          │          │          ├─────────────┤
+                  │ Config   │          │          │          │   AI        │
+                  │ Database │          │          │          │  (stub)     │
+                  │ Security │          │          │          ├─────────────┤
+                  │ Exceptions│         │          │          │ Documentation│
+                  │ Deps     │          │          │          │  (stub)     │
+                  ├──────────┤          │          │          ├─────────────┤
+                  │ Models   │          │          │          │ Modernization│
+                  │ (User,   │          │          │          │  (stub)     │
+                  │ Project, │          │          │          ├─────────────┤
+                  │ Upload,  │          │          │          │  Reports    │
+                  │ Analysis,│          │          │          │  (stub)     │
+                  │ Report)  │          │          │          │             │
+                  └──────────┴──────────┴──────────┴──────────┴─────────────┘
+                       │
+                       ▼
+               ┌──────────────┐
+               │  PostgreSQL  │
+               │  (Docker)    │
+               └──────────────┘
 ```
 
-✅ = implemented; (analysis complete) = all 7 submodules (discovery, 4 detectors, metrics, pipeline, writer, API integration) implemented and tested; everything else is scaffolded.
+✅ = implemented; (analysis ✅) = all analysis submodules (discovery, 4 detectors, metrics, pipeline, writer, API integration, retrieval API) implemented and tested (407 tests); everything else is scaffolded.
 
 ### Next Milestones
 
