@@ -18,13 +18,13 @@
 
 Project Name: Legacy2Next
 
-Version: 0.3.0
+Version: 0.4.0
 
 Current Phase: Development
 
-Current Sprint: Sprint 3 - Uploads Module
+Current Sprint: Sprint 4 - Static Analysis
 
-Overall Progress: 40%
+Overall Progress: 50%
 
 Status: In Progress
 
@@ -34,19 +34,22 @@ Last Updated: 2026-07-26
 
 # Current Goal
 
-Begin Milestone 4 — Static Analysis by implementing the analysis module (language detection, framework detection, dependency parsing, file metadata extraction).
+Complete Milestone 4 — Static Analysis by implementing the detector pipeline (FrameworkDetector, DependencyDetector, MetricsCollector, AnalysisWriter) and service integration.
 
 ---
 
 # Current Task
 
-- Analysis module implementation
+- FrameworkDetector implementation (M4.4)
+- DependencyDetector implementation (M4.4)
+- MetricsCollector implementation (M4.4)
+- AnalysisWriter / persistence (M4.5)
 
 ---
 
 # Current Focus
 
-The current priority is implementing the Analysis module — the remaining modules after completing M2 (Projects) and M3 (Uploads).
+The current priority is completing the remaining detectors (FrameworkDetector, DependencyDetector, MetricsCollector) and wiring them into the analysis pipeline with persistence.
 
 ---
 
@@ -64,12 +67,15 @@ The current priority is implementing the Analysis module — the remaining modul
 - Projects module: 5 CRUD endpoints (POST/GET/GET-by-id/PATCH/DELETE /projects), all auth-required, ownership-scoped via `_get_owned_project` helper, `ValidationException` added to exception hierarchy for PATCH-with-no-fields validation, repository uses ORM-object interfaces, projects router registered in `app/main.py`
 - Uploads module (M3): complete multi-file upload system — Upload SQLAlchemy model (uploads table, FK to projects, SHA-256 hash, 5 indexes), config settings (UPLOAD_ROOT, MAX_FILE_SIZE_MB, MAX_FILES_PER_REQUEST, MAX_REQUEST_SIZE_MB, ALLOWED_EXTENSIONS, MAX_PROJECT_STORAGE_GB), StorageProvider abstraction (ABC + LocalStorageProvider with UUID hex filenames), Pydantic schemas (UploadResponse, UploadListResponse), repository layer (5 functions), QuotaService for per-project storage enforcement, service layer with batch commit/rollback and file-first delete strategy, 4 endpoints (POST/GET /projects/{id}/uploads, GET/DELETE /uploads/{id}), extended AppException hierarchy (FileValidationException, QuotaExceededException, StorageException), DI factories in core/dependencies.py, Alembic migration e6da2e749540, old upload/ stub removed, targeted engineering review applied (removed sha256_hash from response, added logging for rollback cleanup)
 - Documentation updated for M3: API_CONTRACT.md with 4 upload endpoint sections (13 total endpoints), ARCHITECTURE.md with Upload model/storage layer/updated module org, PROJECT_STATE.md with M3 completion
+- M4.1 Infrastructure: Analysis model updated (upload_id FK, error_detail, completed_at), 6 new models (Technology, AnalysisTechnology, AnalysisFile, Dependency, Metric), Alembic migration (3f88aa8a120f) with explicit FK naming, repository skeleton with 20 methods, `update_analysis()` removed per immutability requirement, minor `set_metric` fix applied
+- M4.2 Discovery Engine: `types.py` (FileNode, DirectoryNode, FileGraph with hybrid representation, DiscoveryContext, DiscoveryStats), `ignore_rules.py` (IgnoreRules with 4 match strategies, 12 default dirs, 2 files, 2 globs), `discovery.py` (DiscoveryEngine with os.walk traversal, deterministic sorting, error resilience), 21 tests
+- M4.3B Detector Framework + LanguageDetector: `base.py` (BaseDetector ABC with detect, read_text, logger, detector_name), `types.py` extended (DetectorResult, AnalysisResults, DetectedTechnology, DetectedDependency, DetectedFile, DetectedMetric), `utils.py` (extension→language mapping covering 90+ extensions), `language_detector.py` (LanguageDetector — extension-based language classification, aggregate counts, DetectedFile enrichment), 48 new tests (69 total in test_analysis), all pass
 
 ---
 
 # In Progress
 
-Milestone 4 — Static Analysis (0/4 tasks complete)
+Milestone 4 — Static Analysis (M4 infrastructure, discovery, detector framework, LanguageDetector complete)
 
 ---
 
@@ -136,14 +142,42 @@ Tasks
 
 ## Milestone 4 — Static Analysis
 
-Status: Not Started
+Status: In Progress
 
-Tasks
+### M4.1 — Infrastructure
 
-- [ ] Language Detection
-- [ ] Framework Detection
-- [ ] Dependency Analysis
-- [ ] File Metadata Extraction
+- [x] Analysis model updated (upload_id FK, error_detail, completed_at)
+- [x] 6 new models (Technology, AnalysisTechnology, AnalysisFile, Dependency, Metric)
+- [x] Alembic migration with explicit FK naming
+- [x] Repository skeleton (20 methods)
+- [x] update_analysis() removed (immutability enforcement)
+
+### M4.2 — Discovery Engine
+
+- [x] types.py (FileNode, DirectoryNode, FileGraph, DiscoveryContext, DiscoveryStats)
+- [x] ignore_rules.py (IgnoreRules with 4 match strategies, 17 default patterns)
+- [x] discovery.py (DiscoveryEngine, deterministic os.walk traversal, error resilience)
+- [x] 21 tests passing
+
+### M4.3 — Detector Framework & LanguageDetector
+
+- [x] base.py (BaseDetector ABC with detect, read_text, logger, detector_name)
+- [x] types.py extended (DetectorResult, AnalysisResults, DetectedTechnology, DetectedDependency, DetectedFile, DetectedMetric)
+- [x] utils.py (extension→language mapping covering 90+ extensions)
+- [x] language_detector.py (LanguageDetector — extension classification, aggregation, DetectedFile enrichment)
+- [x] 48 tests passing (69 total in test_analysis)
+
+### M4.4 — Remaining Detectors
+
+- [ ] FrameworkDetector
+- [ ] DependencyDetector
+- [ ] MetricsCollector
+
+### M4.5 — AnalysisWriter & Pipeline
+
+- [ ] Pipeline orchestration
+- [ ] AnalysisService integration
+- [ ] Database persistence
 
 ---
 
@@ -627,10 +661,56 @@ Next
 
 ---
 
+## Session 11 — 2026-07-26
+
+Completed
+
+- Implemented BaseDetector ABC (`app/modules/analysis/base.py`) — abstract detect(context), read_text(relative_path), detector_name property, logger property
+- Extended types.py with detector types: DetectorResult (flat, immutable), AnalysisResults (mutable collector with property accessors), DetectedTechnology, DetectedDependency, DetectedFile, DetectedMetric (all frozen dataclasses)
+- Created utils.py with extension→language mapping covering 90+ programming languages and file formats using `classify_extension()` and `is_known_extension()` helpers
+- Implemented LanguageDetector (`app/modules/analysis/language_detector.py`) — extension-based language classification, count aggregation, percentage evidence, DetectedFile enrichment with language field, error-isolated detect() that catches all exceptions
+- Created 48 comprehensive tests in `tests/test_analysis/test_detector_framework.py` covering: DetectorResult immutability and serialization, all Detected* types, AnalysisResults aggregation and error handling, classify_extension case-insensitivity and edge cases, BaseDetector (naming, abstract enforcement, read_text with/without root, error cases), LanguageDetector (empty project, single/mixed/unknown languages, deterministic output, large project, files without extensions, field correctness)
+- Updated PROJECT_STATE.md with M4 milestone breakdown, session log, version bump to 0.4.0
+- Updated ARCHITECTURE.md with analysis module status
+
+Files Created
+
+- `backend/app/modules/analysis/base.py` — BaseDetector ABC
+- `backend/app/modules/analysis/utils.py` — Extension→language mapping utilities
+- `backend/app/modules/analysis/language_detector.py` — LanguageDetector implementation
+- `backend/tests/test_analysis/test_detector_framework.py` — 48 tests
+
+Files Modified
+
+- `backend/app/modules/analysis/types.py` — Added DetectorResult, AnalysisResults, DetectedTechnology, DetectedDependency, DetectedFile, DetectedMetric
+- `docs/Legacy2Next_PROJECT_STATE.md` — Session 11, M4 milestone breakdown, version bump, current goal/task update
+- `docs/ARCHITECTURE.md` — Updated analysis module status, folder structure, architecture evolution
+
+Testing Performed
+
+- 69 tests in test_analysis: 48 detector framework tests + 21 discovery tests, all passing
+
+Architecture Decisions
+
+- Fluent BaseDetector design with _context_root attribute — set by pipeline orchestration before read_text() calls; avoids passing root_path on every read_text call
+- DetectorResult uses flat tuple-based design (not generics) — consistent with M4.3A refinement; empty tuples are singletons with zero overhead
+- AnalysisResults is mutable during collection (list of DetectorResult) but all Detected* types are frozen dataclasses
+- LanguageDetector uses two-phase design: public detect() catches all exceptions and returns error DetectorResult; private _detect() contains pure logic — never raises
+- Extension mapping uses case-insensitive lookup with pre-computed lowercase dict
+
+Next
+
+- FrameworkDetector implementation (identify frameworks and build tools from config file presence)
+- DependencyDetector implementation (parse dependency manifests)
+
+---
+
 # Definition of Current State
 
-The project has moved from planning to active development (v0.3.0).
+The project has reached v0.4.0 with Milestone 4 (Static Analysis) actively in progress.
 
-Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete. The backend has a complete authentication system (register, login, JWT, protected endpoint), a complete Projects CRUD module (5 endpoints, ownership-scoped), and a complete Uploads module (4 endpoints, file storage, SHA-256 hashing, per-project quota, batch upload with rollback, storage abstraction layer). The application is containerized via Docker Compose with PostgreSQL 16 Alpine, and has two Alembic migrations applied (5 tables: users, projects, uploads, analyses, reports). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are recorded in `docs/DECISIONS.md`. The HTTP API is documented in `docs/API_CONTRACT.md` covering all 13 implemented endpoints with schemas, validation rules, error codes, and behaviour origins.
+Milestone 1 is in progress with 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete. Milestone 4 is in progress: M4.1 Infrastructure (models, migration, repository) complete, M4.2 Discovery Engine (FileGraph, IgnoreRules, DiscoveryEngine) complete, M4.3B Detector Framework + LanguageDetector (BaseDetector, DetectorResult, AnalysisResults, utils, LanguageDetector) complete. Remaining: FrameworkDetector, DependencyDetector, MetricsCollector, AnalysisWriter, pipeline orchestration.
 
-The next session should implement the Analysis module — language detection, framework detection, dependency parsing, and file metadata extraction (Milestone 4).
+The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), Discovery Engine (os.walk with deterministic sorting, ignore rules, FileGraph), and Detector Framework (BaseDetector ABC, LanguageDetector, extension→language mapping). The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 tables + 5 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
+
+The next session should implement the remaining detectors (FrameworkDetector, DependencyDetector, MetricsCollector) followed by AnalysisWriter and pipeline orchestration.

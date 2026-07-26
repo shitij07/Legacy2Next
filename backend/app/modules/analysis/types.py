@@ -3,6 +3,79 @@ from pathlib import Path
 
 
 @dataclass(frozen=True)
+class DetectedTechnology:
+    name: str
+    category: str
+    evidence: str | None = None
+    confidence: str = "high"
+
+
+@dataclass(frozen=True)
+class DetectedDependency:
+    name: str
+    version: str | None = None
+    type: str = "library"
+    source_file: str | None = None
+    ecosystem: str | None = None
+
+
+@dataclass(frozen=True)
+class DetectedMetric:
+    key: str
+    value: int
+
+
+@dataclass(frozen=True)
+class DetectedFile:
+    relative_path: str
+    file_name: str
+    extension: str
+    file_size: int
+    language: str | None = None
+
+
+@dataclass(frozen=True)
+class DetectorResult:
+    detector_name: str
+    technologies: tuple[DetectedTechnology, ...] = ()
+    files: tuple[DetectedFile, ...] = ()
+    dependencies: tuple[DetectedDependency, ...] = ()
+    metrics: tuple[DetectedMetric, ...] = ()
+    error: str | None = None
+
+
+@dataclass
+class AnalysisResults:
+    results: list[DetectorResult]
+    start_time: float
+    end_time: float | None = None
+
+    @property
+    def all_technologies(self) -> list[DetectedTechnology]:
+        return [t for r in self.results for t in r.technologies]
+
+    @property
+    def all_files(self) -> list[DetectedFile]:
+        return [f for r in self.results for f in r.files]
+
+    @property
+    def all_dependencies(self) -> list[DetectedDependency]:
+        return [d for r in self.results for d in r.dependencies]
+
+    @property
+    def all_metrics(self) -> list[DetectedMetric]:
+        return [m for r in self.results for m in r.metrics]
+
+    @property
+    def errors(self) -> list[str]:
+        return [r.error for r in self.results if r.error is not None]
+
+    @property
+    def has_errors(self) -> bool:
+        return any(r.error is not None for r in self.results)
+
+
+@dataclass(frozen=True)
 class FileNode:
     id: int
     relative_path: str
