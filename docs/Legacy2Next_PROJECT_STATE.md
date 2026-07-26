@@ -60,6 +60,7 @@ The current priority is completing the remaining Milestone 1 task: frontend setu
 - Authentication system: register, login (JWT), password hashing (bcrypt via passlib), get_current_user dependency, protected `/auth/me` endpoint
 - Architecture documentation: `docs/ARCHITECTURE.md` with implemented/planned separation, Mermaid diagrams, layer architecture, request lifecycle, authentication flow, database schema, Docker Compose architecture, error handling, module organisation, and architecture evolution roadmap
 - Engineering decision log: `docs/DECISIONS.md` with 18 decisions covering technology stack, application architecture, database/migrations, authentication/security, Docker/infrastructure, and deferred features; each decision documents context, rationale, consequences, alternatives, and revisit conditions
+- API contract: `docs/API_CONTRACT.md` documenting all 4 implemented endpoints (GET /health, POST /auth/register, POST /auth/login, GET /auth/me) with full request/response schemas, validation rules, error codes, behaviour origins (framework vs application), examples, and future endpoint placeholders
 
 ---
 
@@ -164,6 +165,7 @@ Tasks
 # Repository Structure
 
 docs/
+├── API_CONTRACT.md
 ├── ARCHITECTURE.md
 ├── DECISIONS.md
 ├── Legacy2Next_MASTER_PLAN.md
@@ -419,13 +421,21 @@ Next
 
 - Frontend initialization
 
+---
+
+## Session 8 — 2026-07-26
+
+Completed
+
+- Created `docs/API_CONTRACT.md` documenting all 4 implemented endpoints (GET /health, POST /auth/register, POST /auth/login, GET /auth/me) with request/response schemas, validation rules, error codes, behaviour origins (framework-generated vs application-defined), examples, and future endpoint placeholders
+- Updated `docs/Legacy2Next_PROJECT_STATE.md` to reflect API_CONTRACT.md completion
+
 Design Decisions
 
-- Architecture document uses Implemented/Planned section split so every statement is verifiable from the current codebase
-- Mermaid diagrams used only where they improve understanding (layer architecture, auth sequence, Docker Compose topology)
-- Cross-references MASTER_PLAN.md, AI_CONTEXT.md, PROJECT_STATE.md instead of duplicating information
-- Scaffolded modules clearly labelled as stubs; auth module as the only fully implemented module
-- Empty placeholder directories (workers/, integrations/, detectors/, generators/) explicitly noted
+- Framework-generated endpoints (/docs, /redoc, /openapi.json) explicitly separated from project-owned endpoints in a dedicated "Framework Endpoints" section
+- Behaviour Origins section distinguishes auto-generated 422 validation errors from application-defined AppException errors
+- Response Format section documents three categories: success schemas, AppException structured errors, and framework 422 format
+- Source of Truth preamble clarifies this document vs the live OpenAPI spec
 
 Next
 
@@ -437,6 +447,6 @@ Next
 
 The project has moved from planning to active development (v0.1.0).
 
-Milestone 1 is in progress with 5 of 6 tasks complete. The backend has a complete authentication system (register, login, JWT, protected endpoint), is containerized via Docker Compose with PostgreSQL 16 Alpine, and has the initial Alembic migration applied. The backend skeleton is fully established with a modular FastAPI structure, SQLAlchemy models, Alembic migrations, and all 8 feature modules scaffolded with routes, services, schemas, and repository separation. Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are recorded in `docs/DECISIONS.md` with 18 entries covering technology stack, application architecture, database/migrations, authentication/security, Docker/infrastructure, and deferred features.
+Milestone 1 is in progress with 5 of 6 tasks complete. The backend has a complete authentication system (register, login, JWT, protected endpoint), is containerized via Docker Compose with PostgreSQL 16 Alpine, and has the initial Alembic migration applied. The backend skeleton is fully established with a modular FastAPI structure, SQLAlchemy models, Alembic migrations, and all 8 feature modules scaffolded with routes, services, schemas, and repository separation. Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are recorded in `docs/DECISIONS.md`. The HTTP API is documented in `docs/API_CONTRACT.md` covering all 4 implemented endpoints with schemas, validation rules, error codes, and behaviour origins.
 
 The next session should initialize the frontend — the last remaining Milestone 1 task.
