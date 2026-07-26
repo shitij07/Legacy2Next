@@ -34,7 +34,7 @@ Last Updated: 2026-07-26
 
 # Current Goal
 
-Complete Milestone 1 — Project Foundation by finishing frontend setup, database configuration, Docker Compose, and authentication implementation.
+Complete Milestone 1 — Project Foundation by finishing frontend setup, database configuration, Docker Compose, authentication implementation, and architecture documentation.
 
 ---
 
@@ -58,6 +58,7 @@ The current priority is completing the remaining Milestone 1 task: frontend setu
 - Initial Alembic migration generated (`b1a1677bc7ef_initial_migration.py` — creates `users`, `projects`, `analyses`, `reports`)
 - Docker Compose setup: `db` (PostgreSQL 16 Alpine) + `backend` (FastAPI) with health checks, named volumes, and default bridge networking
 - Authentication system: register, login (JWT), password hashing (bcrypt via passlib), get_current_user dependency, protected `/auth/me` endpoint
+- Architecture documentation: `docs/ARCHITECTURE.md` with implemented/planned separation, Mermaid diagrams, layer architecture, request lifecycle, authentication flow, database schema, Docker Compose architecture, error handling, module organisation, and architecture evolution roadmap
 
 ---
 
@@ -162,6 +163,7 @@ Tasks
 # Repository Structure
 
 docs/
+├── ARCHITECTURE.md
 ├── Legacy2Next_MASTER_PLAN.md
 ├── Legacy2Next_AI_CONTEXT.md
 ├── Legacy2Next_PROJECT_STATE.md
@@ -226,6 +228,7 @@ Deployment
 
 # Important Decisions
 
+- Architecture documented in `docs/ARCHITECTURE.md` with Implemented vs Planned separation — planned features are explicitly labelled and not described as if they already exist; Mermaid diagrams visualise layer architecture, authentication flow, and Docker Compose topology.
 - Backend organized by feature modules under `app/modules/` (each module has routes, service, schemas, repository) rather than flat `routers/` + `services/` layers — improves modularity and independent testability.
 - SQLAlchemy models centralized in `app/models/` to avoid circular foreign-key imports across modules.
 - Repository layer separated from services (empty placeholders) to enforce data-access abstraction from the start.
@@ -375,10 +378,31 @@ Next
 
 ---
 
+## Session 6 — 2026-07-26
+
+Completed
+
+- Created `docs/ARCHITECTURE.md` documenting implemented architecture (project overview, folder structure, layer architecture, request lifecycle, DI, auth flow, database schema, Docker Compose, error handling, module organisation) with clearly separated Implemented vs Planned sections and Mermaid diagrams
+- Updated `docs/Legacy2Next_PROJECT_STATE.md` to reflect ARCHITECTURE.md completion
+
+Design Decisions
+
+- Architecture document uses Implemented/Planned section split so every statement is verifiable from the current codebase
+- Mermaid diagrams used only where they improve understanding (layer architecture, auth sequence, Docker Compose topology)
+- Cross-references MASTER_PLAN.md, AI_CONTEXT.md, PROJECT_STATE.md instead of duplicating information
+- Scaffolded modules clearly labelled as stubs; auth module as the only fully implemented module
+- Empty placeholder directories (workers/, integrations/, detectors/, generators/) explicitly noted
+
+Next
+
+- Frontend initialization
+
+---
+
 # Definition of Current State
 
 The project has moved from planning to active development (v0.1.0).
 
-Milestone 1 is in progress with 5 of 6 tasks complete. The backend has a complete authentication system (register, login, JWT, protected endpoint), is containerized via Docker Compose with PostgreSQL 16 Alpine, and has the initial Alembic migration applied. The backend skeleton is fully established with a modular FastAPI structure, SQLAlchemy models, Alembic migrations, and all 8 feature modules scaffolded with routes, services, schemas, and repository separation.
+Milestone 1 is in progress with 5 of 6 tasks complete. The backend has a complete authentication system (register, login, JWT, protected endpoint), is containerized via Docker Compose with PostgreSQL 16 Alpine, and has the initial Alembic migration applied. The backend skeleton is fully established with a modular FastAPI structure, SQLAlchemy models, Alembic migrations, and all 8 feature modules scaffolded with routes, services, schemas, and repository separation. Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation.
 
 The next session should initialize the frontend — the last remaining Milestone 1 task.
