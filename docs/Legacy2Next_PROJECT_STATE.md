@@ -24,7 +24,7 @@ Current Phase: Development
 
 Current Sprint: Sprint 1 - Project Foundation
 
-Overall Progress: 10%
+Overall Progress: 15%
 
 Status: In Progress
 
@@ -41,14 +41,13 @@ Complete Milestone 1 — Project Foundation by finishing frontend setup, databas
 # Current Task
 
 - Frontend initialization with React + TypeScript + Vite
-- Docker Compose configuration for multi-service orchestration
 - Authentication module implementation (register, login, JWT)
 
 ---
 
 # Current Focus
 
-The current priority is completing the remaining Milestone 1 tasks: frontend setup, Docker Compose, and authentication implementation.
+The current priority is completing the remaining Milestone 1 tasks: frontend setup and authentication implementation.
 
 ---
 
@@ -58,12 +57,13 @@ The current priority is completing the remaining Milestone 1 tasks: frontend set
 - Backend initialized (FastAPI app factory, core layer with config/database/security/exceptions, SQLAlchemy models for User/Project/Analysis/Report, 8 module stubs with routes/services/schemas/repository separation, Alembic setup, test scaffolding, pyproject.toml with uv, Dockerfile, workers/ and integrations/ placeholders)
 - PostgreSQL configured with connection pooling (`pool_size=5`, `max_overflow=10`, `pool_pre_ping=True`, `echo` driven by `DATABASE_ECHO`)
 - Initial Alembic migration generated (`b1a1677bc7ef_initial_migration.py` — creates `users`, `projects`, `analyses`, `reports`)
+- Docker Compose setup: `db` (PostgreSQL 16 Alpine) + `backend` (FastAPI) with health checks, named volumes, and default bridge networking
 
 ---
 
 # In Progress
 
-Milestone 1 — Project Foundation (3/6 tasks complete)
+Milestone 1 — Project Foundation (4/6 tasks complete)
 
 ---
 
@@ -76,8 +76,7 @@ None.
 # Next Tasks
 
 1. Initialize React frontend with Vite + TypeScript + TailwindCSS
-2. Set up Docker Compose (backend + database + frontend)
-3. Implement authentication module (register, login, token refresh)
+2. Implement authentication module (register, login, token refresh)
 
 ---
 
@@ -85,7 +84,7 @@ None.
 
 ## Milestone 1 — Project Foundation
 
-Status: In Progress (3/6)
+Status: In Progress (4/6)
 
 Tasks
 
@@ -93,7 +92,7 @@ Tasks
 - [x] Backend Setup
 - [ ] Frontend Setup
 - [x] PostgreSQL Setup
-- [ ] Docker Setup
+- [x] Docker Setup
 - [ ] Authentication
 
 ---
@@ -185,6 +184,8 @@ backend/
 ├── Dockerfile
 └── .env.example
 
+docker-compose.yml     (orchestrates db + backend)
+
 frontend/              (not yet initialized)
 
 prompts/               (not yet populated)
@@ -232,6 +233,8 @@ Deployment
 - `pyproject.toml` used with uv-compatible PEP 621 format instead of `requirements.txt`.
 - `workers/` and `integrations/` directories added for future background tasks and external service adaptors.
 - Later-milestone schema and model fields stripped to keep M1 focused on foundation only.
+- `docker-compose.yml` at repository root orchestrates `db` (PostgreSQL 16 Alpine) + `backend` (FastAPI) with health check dependency and named volumes.
+- Dockerfile uses `pip install .`; `pyproject.toml` required `[tool.setuptools.packages.find]` to resolve flat-layout build error.
 
 ---
 
@@ -312,10 +315,37 @@ Next
 
 ---
 
+## Session 4 — 2026-07-26
+
+Completed
+
+- Docker Compose setup: `docker-compose.yml` with `db` (PostgreSQL 16 Alpine) and `backend` (FastAPI) services
+- Named volumes for PostgreSQL data (`pgdata`) and uploads (`uploads`)
+- PostgreSQL health check with `pg_isready`; backend waits for healthy DB via `depends_on`
+- `DATABASE_URL` override in compose environment (`postgresql://postgres:postgres@db:5432/legacy2next`) — local dev uses `localhost`
+- Default bridge networking (services resolve by name)
+- Docker build fix: `[tool.setuptools.packages.find]` added to `pyproject.toml` to resolve flat-layout discovery error (`app` + `alembic` detected as multiple top-level packages)
+- Verified: `docker compose up --build` starts both services, health endpoint returns `{"status":"ok"}`
+- Verified: `alembic upgrade head` creates all 4 tables successfully
+
+Design Decisions
+
+- No automatic migration on startup — migrations are explicit developer actions
+- No `env_file` in compose — backend Settings defaults are sufficient; only `DATABASE_URL` is overridden via `environment`
+- PostgreSQL port not exposed to host — backend connects via internal network; avoids port conflicts with local PostgreSQL
+- No custom networks — Compose default bridge network sufficient for 2-service setup
+
+Next
+
+- Frontend initialization
+- Authentication implementation
+
+---
+
 # Definition of Current State
 
 The project has moved from planning to active development (v0.1.0).
 
-Milestone 1 is in progress with 3 of 6 tasks complete. PostgreSQL is configured with connection pooling, and the initial Alembic migration has been generated (awaiting review and application). The backend skeleton is fully established with a modular FastAPI structure, SQLAlchemy models, Alembic migrations, and all 8 feature modules scaffolded with routes, services, schemas, and repository separation.
+Milestone 1 is in progress with 4 of 6 tasks complete. The backend is now fully containerized via Docker Compose with PostgreSQL 16 Alpine, health checks, and named volumes. The initial Alembic migration has been applied, creating all 4 tables. The backend skeleton is fully established with a modular FastAPI structure, SQLAlchemy models, Alembic migrations, and all 8 feature modules scaffolded with routes, services, schemas, and repository separation.
 
-The next session should initialize the frontend, set up Docker Compose, and implement the authentication module.
+The next session should initialize the frontend and implement the authentication module.
