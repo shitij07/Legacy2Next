@@ -18,35 +18,35 @@
 
 Project Name: Legacy2Next
 
-Version: 0.4.0
+Version: 0.5.0
 
 Current Phase: Development
 
-Current Sprint: Sprint 4 - Static Analysis
+Current Sprint: Sprint 5 - AI Module
 
-Overall Progress: 55%
+Overall Progress: 65%
 
 Status: In Progress
 
-Last Updated: 2026-07-26
+Last Updated: 2026-07-27
 
 ---
 
 # Current Goal
 
-Milestone 5 — Dashboard Aggregation (M5.3 Dashboard Aggregation complete).
+Milestone 6 — AI Module (complete).
 
 ---
 
 # Current Task
 
-- Performance & Optimisation (M5.4)
+- Frontend initialization (M7 Dashboard frontend)
 
 ---
 
 # Current Focus
 
-Dashboard aggregation endpoint implemented (465 tests). Moving to performance tuning and caching.
+M6 AI Module implemented: 6 POST endpoints, LiteLLM provider abstraction (OpenAI/Anthropic/Gemini/Ollama), Jinja2 prompt system, ContextBuilder, stateless AIService. 537 tests passing (465 existing + 72 new).
 
 ---
 
@@ -76,12 +76,14 @@ Dashboard aggregation endpoint implemented (465 tests). Moving to performance tu
 - M5.1B Analysis Retrieval: `query_service.py` (AnalysisQueryService with 8 retrieval methods), `schemas.py` (8 DTOs + PaginatedResponse), `routes.py` (8 GET endpoints), `repository.py` (9 paginated/filtered read methods), `test_query_api.py` (69 tests covering summary, files, technologies, dependencies, metrics, warnings, project/upload listing, pagination, filtering, sorting, ownership, DTO mapping, determinism, no-writes), 407 total
 - M5.2B Shared Query Infrastructure: `query_options.py` (QueryOptions, Page[T], FileFilter, DependencyFilter, WarningFilter, apply_sort()), refactored repository paginated methods to accept `(filter, opts)` and return `Page[ORM]`, refactored query_service to construct filter+opts, added `search` substring (ILIKE) to files/dependencies/warnings endpoints, 76 tests (was 69), 414 total
 - M5.3B Dashboard Aggregation: `dashboard_service.py` (DashboardService with 6 section builders, ownership validation, derived value computation), `dashboard_schemas.py` (9 nested DTOs: DashboardResponse, GeneralSection, FilesSection, TechnologiesSection, DependenciesSection, WarningsSection, MetricsSection, plus supporting sub-DTOs), `repository.py` (9 new aggregation methods — GROUP BY, COUNT, ORDER BY LIMIT — returning raw tuples/ORM entities only), `routes.py` (GET /analysis/{analysis_id}/dashboard), `test_dashboard_api.py` (51 tests covering all sections, empty data, ownership, DTO mapping, determinism, no-writes, serialization), 465 total
+- M5.4B Performance & Optimisation: Alembic migration `a1b2c3d4e5f6` adds 4 covering indexes (analysis_files_language, analysis_files_is_directory, analysis_warnings_detector, dependencies_type), `app/core/config.py` (configurable pagination limits via `MAX_PAGE_SIZE_SUBRESOURCE`, `MAX_PAGE_SIZE_LIST`, `DEFAULT_PAGE_SIZE_SUBRESOURCE`, `DEFAULT_PAGE_SIZE_LIST`, `SLOW_SERVICE_THRESHOLD_MS`), `dashboard_service.py` `get_dashboard()` uses `time.perf_counter()` with WARNING threshold logging, `query_service.py` `get_analysis_summary()` uses `time.perf_counter()` with WARNING threshold logging, 465 total tests (unchanged)
+- M6 AI Module: 6 POST endpoints (summary, file_explanation, module_explanation, architecture, technical_debt, modernization); `app/integrations/ai/provider.py` — AIProvider ABC + LiteLLMProvider wrapping `litellm.completion()`; `app/modules/ai/` — AIService ABC + DefaultAIService, ContextBuilder with 6 typed dataclasses, PromptLoader (Jinja2 + FileSystemLoader + cache), 6 Jinja2 prompt templates; `app/core/config.py` — 7 AI settings (AI_ENABLED, AI_PROVIDER, AI_MODEL, AI_API_KEY, AI_TEMPERATURE, AI_MAX_TOKENS, AI_TIMEOUT_SECONDS); `app/core/dependencies.py` — get_ai_provider, get_ai_service factories; ownership validation via FK chain; 72 AI tests (provider 9, prompt_loader 10, context_builder 7, service 14, routes 21); 537 total tests passing, zero regressions
 
 ---
 
 # In Progress
 
-Milestone 5 — Performance & Optimisation (M5.4)
+Milestone 7 — Dashboard Frontend (pending)
 
 ---
 
@@ -93,7 +95,7 @@ None.
 
 # Next Tasks
 
-1. Performance & Optimisation — Caching and query tuning (M5.4)
+1. Frontend initialization (React + TypeScript + Vite + TailwindCSS) — M7 Dashboard frontend
 
 ---
 
@@ -101,7 +103,7 @@ None.
 
 ## Milestone 1 — Project Foundation
 
-Status: In Progress (5/6)
+Status: In Progress (5/6 — Frontend pending)
 
 Tasks
 
@@ -235,30 +237,54 @@ Status: Complete (338 tests passing)
 
 ## Milestone 5 — Analysis Modules
 
-Status: In Progress (M5.3 Dashboard complete)
+Status: Complete (M5.4 Performance & Optimisation done)
 
 Tasks
 
 - [x] M5.1 Analysis Retrieval API
 - [x] M5.2 Shared Query Infrastructure
 - [x] M5.3 Dashboard Aggregation
-- [ ] M5.4 Performance & Optimisation
+- [x] M5.4 Performance & Optimisation
 
 ---
 
-## Milestone 6 — Dashboard
+## Milestone 6 — AI Module
+
+Status: Complete (72 tests)
+
+Tasks
+
+- [x] AI integration layer (AIProvider ABC + LiteLLMProvider)
+- [x] 6 POST endpoints (summary, file_explanation, module_explanation, architecture, technical_debt, modernization)
+- [x] Jinja2 prompt system (6 templates)
+- [x] ContextBuilder with 6 typed dataclasses
+- [x] DefaultAIService orchestration (context → prompt → provider → DTO)
+- [x] Ownership validation via FK chain
+- [x] 7 AI config settings
+- [x] Provider swapping via env config
+- [x] No persistence, no caching, stateless
+
+---
+
+## Milestone 7 — Dashboard Frontend
+
+Status: Not Started
+
+---
+
+## Milestone 8 — Report Export & Documentation
 
 Status: Not Started
 
 Tasks
 
-- [ ] Dashboard
-- [ ] Reports
-- [ ] Documentation Viewer
+- [ ] Reports module (PDF/HTML export)
+- [ ] Documentation module (auto-generated docs)
+- [ ] Modernization module (migration plans)
 
 ---
 
-## Milestone 7 — Finalization
+## Milestone 9 — Finalization
 
 Status: Not Started
 
@@ -291,9 +317,11 @@ backend/
 │   │   ├── auth/      (fully implemented)
 │   │   ├── projects/  (fully implemented)
 │   │   ├── uploads/   (fully implemented — routes, service, schemas, repository, quota)
+│   │   ├── analysis/  (fully implemented — discovery, detectors, metrics, pipeline, writer, API, retrieval, dashboard)
+│   │   ├── ai/        (fully implemented — routes, service, schemas, context_builder, prompt_loader, prompts/)
 │   │   └── */         (scaffolded — routes, service, schemas, repository)
 │   ├── workers/       (placeholder)
-│   ├── integrations/  (placeholder)
+│   ├── integrations/  (ai/provider.py implemented — AIProvider ABC + LiteLLMProvider)
 │   └── utils/         (placeholder)
 ├── alembic/           (migration environment; 2 migration versions)
 ├── tests/             (conftest + test dirs per module, all empty)
@@ -1072,14 +1100,151 @@ Architecture Decisions
 
 Next
 
-- Milestone 5 — AI Integration planning
+- Milestone 6 — AI & Dashboard implementation
+
+---
+
+## Session 19 — 2026-07-27
+
+Completed
+
+- Implemented M5.4B Performance & Optimisation (reconciled with frozen architecture):
+  - Verified Alembic migration `a1b2c3d4e5f6` with 4 covering indexes on analysis tables
+  - Verified configurable pagination limits in `app/core/config.py`: `MAX_PAGE_SIZE_SUBRESOURCE`, `MAX_PAGE_SIZE_LIST`, `DEFAULT_PAGE_SIZE_SUBRESOURCE`, `DEFAULT_PAGE_SIZE_LIST`, `SLOW_SERVICE_THRESHOLD_MS`
+  - Verified `get_dashboard()` in `dashboard_service.py` uses `time.perf_counter()` with WARNING/INFO threshold logging
+  - Verified `get_analysis_summary()` in `query_service.py` uses `time.perf_counter()` with WARNING/INFO threshold logging
+  - Removed out-of-scope caching layer (TTLCache, cache settings, cache invalidation, cache tests)
+  - Removed `backend/app/core/cache.py`, `backend/tests/test_core/test_cache.py`, `backend/tests/test_analysis/conftest.py`
+  - Updated all documentation to match architecture
+  - All 465 tests passing (unchanged from M5.3B)
+
+Files Created
+
+- `backend/alembic/versions/a1b2c3d4e5f6_add_m54_covering_indexes.py` — 4 covering indexes (pre-existing)
+
+Files Deleted
+
+- `backend/app/core/cache.py` — Out-of-scope caching layer removed
+- `backend/tests/test_core/test_cache.py` — Out-of-scope cache tests removed
+- `backend/tests/test_core/__init__.py` — Removed with test_core directory
+- `backend/tests/test_analysis/conftest.py` — Out-of-scope cache fixture removed
+
+Files Modified
+
+- `backend/app/core/config.py` — Removed CACHE_ENABLED, CACHE_TTL_SECONDS, CACHE_MAX_ITEMS
+- `backend/app/modules/analysis/dashboard_service.py` — Removed cache import/logic, kept timing/logging
+- `backend/app/modules/analysis/query_service.py` — Removed cache import/logic, kept timing/logging
+- `backend/app/modules/analysis/service.py` — Removed cache invalidation import/logic
+- `docs/ARCHITECTURE.md` — Removed caching section, updated DTO/caching references
+- `docs/CHANGELOG.md` — Rewrote M5.4B entry to match architecture
+- `docs/Legacy2Next_PROJECT_STATE.md` — This session, removed cache references, corrected test counts
+
+Testing Performed
+
+- 465 tests in test_analysis, all passing (unchanged from M5.3B)
+
+Architecture Decisions
+
+- M5.4B scope strictly limited to: covering indexes, configurable pagination limits, perf_counter() timing, threshold logging
+- No caching — deferred to future milestone
+- No new endpoints, no new business logic, no repository changes
+- Pagination size limits configurable via env vars (MAX_PAGE_SIZE_SUBRESOURCE, MAX_PAGE_SIZE_LIST, etc.)
+- SLOW_SERVICE_THRESHOLD_MS (default 1000ms) controls WARNING logging threshold for service timing
+- All existing tests preserved and passing at 465
+
+---
+
+## Session 20 — 2026-07-27
+
+Completed
+
+- Implemented M6 AI Module (on-demand LLM-generated analysis insights) with 6 POST endpoints, LiteLLM provider abstraction, Jinja2 prompt templates, ContextBuilder, PromptLoader, and stateless AIService — zero persistence, zero caching
+- Provider abstraction via AIProvider ABC + LiteLLMProvider wrapping `litellm.completion()` — supports OpenAI, Anthropic, Gemini, Ollama, swappable via config
+- Created `app/integrations/ai/provider.py` — AIProvider ABC + LiteLLMProvider
+- Created `app/modules/ai/` with 6 components:
+  - `routes.py` — 6 POST endpoints (summary, file_explanation, module_explanation, architecture, technical_debt, modernization)
+  - `service.py` — AIService ABC + DefaultAIService (orchestrates ContextBuilder → PromptLoader → AIProvider)
+  - `context_builder.py` — ContextBuilder + 6 typed dataclasses per feature; loads analysis data read-only
+  - `prompt_loader.py` — PromptLoader (Jinja2 Environment + FileSystemLoader + template cache)
+  - `schemas.py` — ModuleExplanationRequest, GenerationResponse
+  - `prompts/*.jinja2` — 6 Jinja2 templates
+- Added 7 AI settings to `app/core/config.py`: AI_ENABLED, AI_PROVIDER, AI_MODEL, AI_API_KEY, AI_TEMPERATURE, AI_MAX_TOKENS, AI_TIMEOUT_SECONDS
+- Added `get_ai_provider()` and `get_ai_service()` DI factories in `app/core/dependencies.py`
+- Added `litellm>=1.40.0` and `Jinja2>=3.1.0` to `pyproject.toml`
+- litellm 1.49.7 installed in dev environment (Python 3.14.3)
+- Created 72 AI tests across 5 test files:
+  - `test_provider.py` — 9 tests (ABC enforcement, LiteLLMProvider generate/errors/timeout)
+  - `test_prompt_loader.py` — 10 tests (load, render, cache, custom dir, dataclass, missing template)
+  - `test_context_builder.py` — 7 tests (all 6 context types + missing data)
+  - `test_service.py` — 14 tests (ABC enforcement, ownership, all 6 features, provider/prompt failures)
+  - `test_routes.py` — 21 tests (all 6 endpoints, auth, ownership, DTO mapping, 422 validation)
+- Routes depend on AIService ABC (not DefaultAIService) — injected via get_ai_service() dependency factory
+- Ownership validation walks FK chain: Analysis → Upload → Project → user_id (same pattern as analysis query_service)
+- All 537 tests pass (465 existing + 72 new), zero regressions
+- Updated docs/CHANGELOG.md — Added M6B entry
+- Updated docs/ARCHITECTURE.md — Added AI Module section (provider abstraction, prompt system, ContextBuilder, PromptLoader, generation flow), updated version to 0.5.0, updated Planned sections, updated evolution to M6
+- Updated docs/Legacy2Next_PROJECT_STATE.md — This session
+
+Files Created
+
+- `backend/app/integrations/ai/__init__.py` — Package init
+- `backend/app/integrations/ai/provider.py` — AIProvider ABC + LiteLLMProvider
+- `backend/app/modules/ai/__init__.py` — Package init
+- `backend/app/modules/ai/schemas.py` — ModuleExplanationRequest, GenerationResponse
+- `backend/app/modules/ai/context_builder.py` — ContextBuilder + 6 dataclasses
+- `backend/app/modules/ai/prompt_loader.py` — PromptLoader
+- `backend/app/modules/ai/service.py` — AIService ABC + DefaultAIService
+- `backend/app/modules/ai/routes.py` — 6 POST endpoints
+- `backend/app/modules/ai/prompts/summary.jinja2`
+- `backend/app/modules/ai/prompts/file_explanation.jinja2`
+- `backend/app/modules/ai/prompts/module_explanation.jinja2`
+- `backend/app/modules/ai/prompts/architecture.jinja2`
+- `backend/app/modules/ai/prompts/technical_debt.jinja2`
+- `backend/app/modules/ai/prompts/modernization.jinja2`
+- `backend/tests/test_ai/__init__.py`
+- `backend/tests/test_ai/test_provider.py` — 9 tests
+- `backend/tests/test_ai/test_prompt_loader.py` — 10 tests
+- `backend/tests/test_ai/test_context_builder.py` — 7 tests
+- `backend/tests/test_ai/test_service.py` — 14 tests
+- `backend/tests/test_ai/test_routes.py` — 21 tests
+
+Files Modified
+
+- `backend/app/core/config.py` — Added 7 AI settings fields
+- `backend/app/core/dependencies.py` — Added get_ai_provider, get_ai_service factories
+- `backend/app/main.py` — Registered ai_router
+- `backend/app/.env.example` — Added AI env vars
+- `backend/pyproject.toml` — Added litellm, Jinja2 dependencies
+- `docs/CHANGELOG.md` — M6B entry
+- `docs/ARCHITECTURE.md` — AI Module section, version bump, updated planned/evolution
+- `docs/Legacy2Next_PROJECT_STATE.md` — This session
+
+Testing Performed
+
+- 537 tests total: 465 existing analysis/auth/projects/uploads + 72 new AI tests (provider 9, prompt_loader 10, context_builder 7, service 14, routes 21), all passing
+- All existing tests preserved with zero regressions
+
+Architecture Decisions
+
+- Provider abstraction via AIProvider ABC — routes depend on AIService ABC, not DefaultAIService
+- LiteLLMProvider wraps litellm.completion() — supports OpenAI, Anthropic, Gemini, Ollama
+- Context dataclasses are typed frozen dataclasses (not dicts) — never expose ORM models
+- PromptLoader owns Jinja2 rendering — AIProvider knows nothing about prompts
+- ContextBuilder reads analysis data from repository only (read-only) — no DB writes
+- Ownership validation: same FK-chain walk as analysis query_service
+- Templates colocated in app/modules/ai/prompts/ — 6 files, one per feature
+- No persistence, no caching, no streaming — all endpoints are stateless POST
+- All tests mock the provider (no real LLM calls in test suite)
+- litellm 1.49.7 installed (Python 3.14.3 compatibility via loose deps)
 
 ---
 
 # Definition of Current State
 
-Milestone 4 (Static Analysis) is **complete** with all 9 submodules implemented and tested. Milestones 5.1 (Analysis Retrieval), 5.2 (Shared Query Infrastructure), and 5.3 (Dashboard Aggregation) are also **complete**. Total: 465 tests in test_analysis, zero failures. Milestone 1 has 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete.
+Milestone 4 (Static Analysis) is **complete** with all 9 submodules implemented and tested. Milestones 5.1 (Analysis Retrieval), 5.2 (Shared Query Infrastructure), 5.3 (Dashboard Aggregation), 5.4 (Performance & Optimisation), and 6 (AI Module) are also **complete**. Total: 537 tests, zero failures. Milestone 1 has 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete.
 
-The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), and Analysis module (15 endpoints — 6 POST + 9 GET) with Discovery Engine, Detector Framework (4 detectors), MetricsCollector, AnalysisPipeline, AnalysisWriter, API Integration, Retrieval API, and Dashboard Aggregation. The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with two Alembic migrations applied (5 base tables + 6 M4 analysis tables). Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 13 implemented endpoints.
+The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), Analysis module (15 endpoints — 6 POST + 9 GET) with Discovery Engine, Detector Framework (4 detectors), MetricsCollector, AnalysisPipeline, AnalysisWriter, API Integration, Retrieval API, and Dashboard Aggregation, and AI module with 6 on-demand generation endpoints. The AI module provides LLM-powered project summaries, file explanations, module explanations, architecture descriptions, technical debt analysis, and modernization recommendations through a provider-abstracted architecture (LiteLLM supporting OpenAI, Anthropic, Gemini, Ollama) with Jinja2 prompt templates and a typed ContextBuilder.
 
-The next session should begin Milestone 5.4 (Performance & Optimisation).
+The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with four Alembic migrations applied (5 base tables + 6 M4 analysis tables + 4 covering indexes). Service-level timing with configurable threshold logging is in place. Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 19 implemented endpoints (13 existing + 6 AI POST endpoints).
+
+The next session should begin Milestone 7 (Dashboard Frontend — React + TypeScript + Vite + TailwindCSS initialization).

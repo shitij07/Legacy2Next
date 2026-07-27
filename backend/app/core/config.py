@@ -38,6 +38,27 @@ class Settings(BaseSettings):
 
     MAX_PROJECT_STORAGE_GB: int = 5
 
+    MAX_PAGE_SIZE_SUBRESOURCE: int = 200
+    MAX_PAGE_SIZE_LIST: int = 100
+    DEFAULT_PAGE_SIZE_SUBRESOURCE: int = 50
+    DEFAULT_PAGE_SIZE_LIST: int = 20
+    SLOW_SERVICE_THRESHOLD_MS: int = 1000
+
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+    ]
+
+    AI_ENABLED: bool = True
+    AI_PROVIDER: str = "litellm"
+    AI_MODEL: str = "gpt-4o-mini"
+    AI_API_KEY: str = ""
+    AI_TEMPERATURE: float = 0.3
+    AI_MAX_TOKENS: int = 2048
+    AI_TIMEOUT_SECONDS: int = 60
+
     class Config:
         env_file = ".env"
 

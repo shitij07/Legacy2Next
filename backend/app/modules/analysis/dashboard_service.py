@@ -1,7 +1,13 @@
+import logging
+import time
+
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.exceptions import NotFoundException
+
 from app.modules.analysis import repository
+
 from app.modules.analysis.dashboard_schemas import (
     CategoryCount,
     ConfidenceCount,
@@ -19,6 +25,8 @@ from app.modules.analysis.dashboard_schemas import (
     TopPackage,
     WarningsSection,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _get_owned_analysis(db: Session, user_id: int, analysis_id: int):
@@ -43,9 +51,10 @@ def _duration_ms(analysis) -> int | None:
 
 
 def get_dashboard(db: Session, user_id: int, analysis_id: int) -> DashboardResponse:
+    _start = time.perf_counter()
     analysis = _get_owned_analysis(db, user_id, analysis_id)
 
-    return DashboardResponse(
+    result = DashboardResponse(
         general=_build_general_section(analysis),
         files=_build_files_section(db, analysis.id),
         technologies=_build_technologies_section(db, analysis.id),
@@ -53,6 +62,13 @@ def get_dashboard(db: Session, user_id: int, analysis_id: int) -> DashboardRespo
         warnings=_build_warnings_section(db, analysis.id),
         metrics=_build_metrics_section(db, analysis.id),
     )
+
+    _elapsed_ms = (time.perf_counter() - _start) * 1000
+    if _elapsed_ms >= settings.SLOW_SERVICE_THRESHOLD_MS:
+        logger.warning("get_dashboard(%d) took %.0fms", analysis_id, _elapsed_ms)
+    else:
+        logger.info("get_dashboard(%d) took %.0fms", analysis_id, _elapsed_ms)
+    return result
 
 
 def _build_general_section(analysis) -> GeneralSection:

@@ -2,7 +2,7 @@
 
 # Legacy2Next — Architecture
 
-> **Version:** 0.4.0
+> **Version:** 0.5.0
 >
 > **Status:** Implemented sections reflect the current repository. Planned sections describe upcoming milestones.
 >
@@ -16,9 +16,9 @@
 
 ## Project Overview
 
-Legacy2Next is a FastAPI backend for legacy software analysis and modernization. At v0.4.0 the backend has a complete authentication system, a Projects CRUD module with ownership scoping, an Uploads module with file storage and quota management, a Discovery Engine, a Detector Framework with LanguageDetector, FrameworkDetector, and DependencyDetector, a PostgreSQL database with Alembic migrations, Docker Compose orchestration, and a storage abstraction layer. The auth, projects, uploads, and analysis (discovery + detector framework) modules are partially implemented; the remaining modules are stubs awaiting their milestone.
+Legacy2Next is a FastAPI backend for legacy software analysis and modernization. At v0.5.0 the backend has a complete authentication system, Projects CRUD, Uploads module, full Analysis pipeline (discovery, 4 detectors, metrics, writer, retrieval API, dashboard aggregation), and an AI module with 6 on-demand generation endpoints. The AI module provides LLM-powered project summaries, file explanations, module explanations, architecture descriptions, technical debt analysis, and modernization recommendations through a provider-abstracted architecture.
 
-**Phase:** Development (Milestone 4 — Static Analysis complete).
+**Phase:** Development (Milestone 6 — AI Module complete).
 
 **What exists today:**
 
@@ -38,9 +38,10 @@ Legacy2Next is a FastAPI backend for legacy software analysis and modernization.
 | Dockerfile (python:3.12-slim, pip install) | Implemented |
 | pyproject.toml (PEP 621, uv-compatible) | Implemented |
 | Test scaffolding (pytest, TestClient, 8 test directories) | Scaffolded |
-| 4 remaining modules (ai, documentation, modernization, reports) | Scaffolded — routes/services/schemas/repository stubs |
+| AI module (6 POST endpoints, provider abstraction, prompt system, context builder) | Implemented (M6) |
+| 3 remaining modules (documentation, modernization, reports) | Scaffolded — routes/services/schemas/repository stubs |
 | Frontend (React + TypeScript + Vite) | Not initialized |
-| Background workers, integrations | Placeholder directories |
+| Background workers, integrations (ai provider) | Placeholder directories (workers); integrations/ai/ implemented |
 
 ---
 
@@ -53,11 +54,11 @@ backend/
 │   ├── main.py                          # FastAPI app factory, health endpoint, router includes
 │   ├── core/
 │   │   ├── __init__.py
-│   │   ├── config.py                    # Settings via pydantic-settings (env file support)
+│   │   ├── config.py                    # Settings via pydantic-settings (env file support) — includes AI_* settings
 │   │   ├── database.py                  # SQLAlchemy engine, sessionmaker, Base, get_db generator
 │   │   ├── security.py                  # hash_password, verify_password, create/decode JWT
 │   │   ├── exceptions.py                # AppException hierarchy (NotFound, Unauthorized, Conflict, FileValidation, QuotaExceeded, Storage)
-│   │   └── dependencies.py              # get_current_user, get_storage_provider, get_quota_service
+│   │   └── dependencies.py              # get_current_user, get_storage_provider, get_quota_service, get_ai_provider, get_ai_service
 │   ├── storage/
 │   │   ├── __init__.py
 │   │   ├── base.py                      # StorageProvider ABC + FileStorageResult TypedDict
@@ -74,13 +75,17 @@ backend/
 │   │   ├── auth/                        # Fully implemented (routes, service, schemas, repository)
 │   │   ├── projects/                    # Fully implemented (routes, service, schemas, repository)
 │   │   ├── uploads/                     # Fully implemented (routes, service, schemas, repository, quota)
-│   │   ├── analysis/                    # Fully implemented: discovery, ignore_rules, base, types, utils, detectors, metrics_collector, pipeline, writer, repository, service, query_service, schemas, routes
-│   │   ├── ai/                          # Scaffolded
+│   │   ├── analysis/                    # Fully implemented: discovery, ignore_rules, base, types, utils, detectors, metrics_collector, pipeline, writer, repository, service, query_service, schemas, routes, dashboard
+│   │   ├── ai/                          # Fully implemented (M6): routes, service (ABC + DefaultAIService), schemas, context_builder, prompt_loader, prompts/
 │   │   ├── documentation/               # Scaffolded (+ generators/ subdirectory stubs)
 │   │   ├── modernization/               # Scaffolded
 │   │   └── reports/                     # Scaffolded
 │   ├── workers/                         # Placeholder (empty __init__.py)
-│   ├── integrations/                    # Placeholder (empty __init__.py)
+│   ├── integrations/
+│   │   ├── __init__.py
+│   │   └── ai/
+│   │       ├── __init__.py
+│   │       └── provider.py              # AIProvider ABC + LiteLLMProvider
 │   └── utils/                           # Empty stubs (file_utils.py, validators.py)
 ├── alembic/
 │   ├── alembic.ini                      # Points to app models, overrides sqlalchemy.url at runtime
@@ -106,7 +111,13 @@ backend/
 │   │   ├── test_writer.py                # 26 tests (AnalysisWriter)
 │   │   ├── test_api_integration.py       # 27 tests (POST /analysis/{upload_id})
 │   │   └── test_query_api.py             # 69 tests (GET endpoints, pagination, filtering, sorting, ownership)
-│   ├── test_ai/                         # Empty __init__.py
+│   ├── test_ai/
+│   │   ├── __init__.py
+│   │   ├── test_provider.py             # 9 tests (AIProvider ABC, LiteLLMProvider generate/errors/timeout)
+│   │   ├── test_prompt_loader.py        # 10 tests (load, render, cache, custom dir, dataclass, missing template)
+│   │   ├── test_context_builder.py      # 7 test classes, 7 tests (all 6 context types + missing data)
+│   │   ├── test_service.py              # 14 tests (AIService ABC, ownership, all 6 features, provider/prompt failures)
+│   │   └── test_routes.py               # 21 tests (all 6 endpoints, auth, ownership, DTO mapping, 422 validation)
 │   ├── test_documentation/              # Empty __init__.py
 │   ├── test_modernization/              # Empty __init__.py
 │   └── test_reports/                    # Empty __init__.py
@@ -250,7 +261,7 @@ DashboardService.get_dashboard()
 
 **Never writes:** `DashboardService` never calls `db.commit()`, `db.rollback()`, or `db.flush()`. All repository aggregation methods are SELECT-only.
 
-**DTO structure:** Nested `DashboardResponse` with 6 sections — no Health section (deferred to M6), no caching (deferred to M5.4).
+**DTO structure:** Nested `DashboardResponse` with 6 sections — no Health section (deferred to M6), no caching (deferred to future milestone).
 
 **Aggregation methods on repository:**
 | Method | Returns | SQL |
@@ -289,6 +300,89 @@ query_options.py       # Shared query infrastructure (QueryOptions, Page[T], fil
 The detection framework (BaseDetector, LanguageDetector, FrameworkDetector, DependencyDetector) is now implemented; the existing `detectors/language.py`, `detectors/framework.py`, `detectors/dependency.py` stubs remain unused until migration.
 
 ---
+
+### AI Module — Generation Layer
+
+The AI module provides 6 on-demand LLM-powered generation endpoints. It follows a layered architecture with strict separation of concerns.
+
+```
+Client (POST)
+     │
+     ▼
+Routes (6 endpoints)
+     │  depends on AIService (ABC)
+     ▼
+DefaultAIService (orchestration)
+     │
+     ├── _validate_ownership()  → Analysis → Upload → Project → user_id
+     ├── ContextBuilder.build_*_context()  → typed @dataclass
+     ├── PromptLoader.render()             → Jinja2 template → str
+     └── AIProvider.generate()             → LLM call → str
+          │
+          ▼
+     GenerationResponse (DTO)
+```
+
+**Layer Responsibilities:**
+
+| Layer | Responsibility |
+|-------|---------------|
+| `routes.py` | 6 POST endpoints — inject deps, delegate to AIService, return DTO |
+| `service.py` | `AIService` ABC + `DefaultAIService` — ownership validation, orchestration |
+| `context_builder.py` | Load analysis data from repository → assemble typed dataclasses (6 context types) |
+| `prompt_loader.py` | Jinja2 Environment + FileSystemLoader + compiled template cache |
+| `provider.py` (`integrations/ai/`) | `AIProvider` ABC + `LiteLLMProvider` — single `generate()` method |
+| `schemas.py` | `ModuleExplanationRequest`, `GenerationResponse` — no `from_attributes` |
+| `prompts/*.jinja2` | 6 Jinja2 templates — one per feature, versionable |
+
+**Endpoints:**
+
+| Endpoint | Feature | Context Type |
+|----------|---------|-------------|
+| `POST /ai/analysis/{id}/summary` | Project overview | `SummaryContext` |
+| `POST /ai/analysis/{id}/file/{file_id}/explain` | File explanation | `FileExplanationContext` |
+| `POST /ai/analysis/{id}/module` | Module explanation | `ModuleExplanationContext` |
+| `POST /ai/analysis/{id}/architecture` | Architecture description | `ArchitectureContext` |
+| `POST /ai/analysis/{id}/technical-debt` | Technical debt analysis | `TechnicalDebtContext` |
+| `POST /ai/analysis/{id}/modernization` | Modernization recommendations | `ModernizationContext` |
+
+**Provider Abstraction:**
+
+```
+AIProvider (ABC) ← LiteLLMProvider
+    │
+    ├── generate(prompt, system_prompt, temperature, max_tokens) → str
+    └── model_name → str
+
+LiteLLMProvider delegates to litellm.completion():
+    "gpt-4o-mini"       → OpenAI
+    "claude-3-haiku"    → Anthropic
+    "gemini/gemini-pro" → Google Gemini
+    "ollama/llama3"     → local Ollama
+```
+
+- Routes depend on `AIService` (ABC) — never `DefaultAIService`
+- Service depends on `AIProvider` (ABC) — never `LiteLLMProvider`
+- Provider swap = config change (`AI_PROVIDER` env var) + optional new class in `integrations/ai/`
+
+**ContextBuilder:** Each feature has a typed dataclass context. Builder methods load data from the analysis repository (read-only) and assemble the context. File contents read via `Path.read_text()` for `file_explanation` only. No ORM objects escape into prompts.
+
+**PromptLoader:** Jinja2 `Environment` with `FileSystemLoader` pointing to `app/modules/ai/prompts/`. Compiled templates cached in memory. Accepts typed dataclass contexts (converts via `dataclasses.asdict`).
+
+**Ownership validation:** Same FK-chain walk as analysis query_service: `Analysis → Upload → Project → user_id`. Raises `NotFoundException` if missing or unowned.
+
+**No persistence:** All endpoints are stateless POST — no reads, no writes, no caching. Each call generates fresh content.
+
+**Six context dataclasses:**
+
+```
+SummaryContext          — project_name, total_files, total_directories, languages, technologies, dependencies, primary_language, total_file_size, file_count_by_extension
+FileExplanationContext  — relative_path, file_name, extension, file_size, lines_of_code, language, content
+ModuleExplanationContext — module_path, total_files, total_size, languages, files, subdirectories
+ArchitectureContext     — project_name, total_files, languages, technologies, dependencies, top_level_directories
+TechnicalDebtContext    — project_name, total_files, total_warnings, detector_breakdown, warning_samples, languages, technologies
+ModernizationContext    — project_name, languages, technologies, dependencies, total_dependencies, total_technologies, total_files
+```
 
 ## Layer Architecture
 
@@ -370,6 +464,8 @@ The DI container is managed entirely by FastAPI's `Depends()` mechanism.
 | `get_current_user` — returns `User` from JWT token | `app/core/dependencies.py:14` | All protected endpoints: `GET /auth/me`, `/projects/*`, `/uploads/*` |
 | `get_storage_provider` — returns `LocalStorageProvider` | `app/core/dependencies.py:18` | Upload endpoints: `POST /projects/{id}/uploads`, `DELETE /uploads/{id}` |
 | `get_quota_service` — returns `QuotaService` | `app/core/dependencies.py:22` | Upload endpoint: `POST /projects/{id}/uploads` |
+| `get_ai_provider` — returns `AIProvider` | `app/core/dependencies.py:26` | AI module (via `get_ai_service`) |
+| `get_ai_service` — returns `AIService` | `app/core/dependencies.py:34` | AI routes: all 6 POST endpoints |
 
 **`get_db` lifecycle:** A session is created at the start of each request and closed in the `finally` block of the generator. FastAPI handles the dependency lifecycle per request — no manual session management is required in route handlers.
 
@@ -647,12 +743,12 @@ A React + TypeScript + Vite + TailwindCSS application will be initialized in the
 | Module | Status |
 |---|---|
 | **Analysis** | Complete (M4 + M5.1). Discovery Engine, Detector Framework (4 detectors), MetricsCollector, AnalysisPipeline, AnalysisWriter, API Integration, and Retrieval API all implemented. 407 tests passing. |
-| **AI** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
+| **AI** | **Complete (M6).** 6 POST endpoints, provider abstraction (AIProvider ABC + LiteLLMProvider), Jinja2 prompt system, ContextBuilder, 72 tests. |
 | **Documentation** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist; `generators/` subdirectory present but empty. |
 | **Modernization** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
 | **Reports** | Planned (not yet implemented). Module scaffolded — routes, service, schemas, repository stubs exist. |
 
-Uploads (M3) is now complete. Remaining modules will be implemented in milestone order: Analysis in M4, AI in M5, Documentation/Modernization/Reports in M6.
+Uploads (M3), Analysis (M4/M5), and AI (M6) are now complete. Remaining modules: Documentation, Modernization, Reports.
 
 ## Database Schema Expansion
 
@@ -666,22 +762,24 @@ Uploads (M3) is now complete. Remaining modules will be implemented in milestone
 
 ## External Integrations (`app/integrations/`)
 
-- Placeholder for adapters to AI providers (OpenAI API, etc.)
-- Pluggable design so analysis and documentation generation can swap backends
+- AI provider adapter implemented: `app/integrations/ai/provider.py` — `AIProvider` ABC + `LiteLLMProvider`
+- Swappable via environment config: `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`
+- Supports OpenAI, Anthropic, Gemini, Ollama through `litellm.completion()`
+- Pluggable design for future documentation/reports generation backends
 
 ---
 
 ## Architecture Evolution
 
-### Current Milestone — Milestone 5
+### Current Milestone — Milestone 6 (complete)
 
 ```
-                                                                    ┌──────────────┐
-                                                                    │   Frontend   │
-                                                                    │  (not yet)   │
-                                                                    └──────────────┘
-                                                                           │
-                                                                           ▼
+                                                                     ┌──────────────┐
+                                                                     │   Frontend   │
+                                                                     │  (not yet)   │
+                                                                     └──────────────┘
+                                                                            │
+                                                                            ▼
  ┌──────────┐     ┌──────────────────────────────────────────────────────────┐
  │  Client   │────▶                    FastAPI Backend                       │
  │ (curl/   │     ├──────────┬──────────┬──────────┬──────────┬─────────────┤
@@ -689,7 +787,7 @@ Uploads (M3) is now complete. Remaining modules will be implemented in milestone
  └──────────┘     │  Layer   │   ✅     │   ✅     │   ✅      │   ✅        │
                   ├──────────┤          │          │          ├─────────────┤
                   │ Config   │          │          │          │   AI        │
-                  │ Database │          │          │          │  (stub)     │
+                  │ Database │          │          │          │   ✅        │
                   │ Security │          │          │          ├─────────────┤
                   │ Exceptions│         │          │          │ Documentation│
                   │ Deps     │          │          │          │  (stub)     │
@@ -700,6 +798,7 @@ Uploads (M3) is now complete. Remaining modules will be implemented in milestone
                   │ Upload,  │          │          │          │  Reports    │
                   │ Analysis,│          │          │          │  (stub)     │
                   │ Report)  │          │          │          │             │
+                  │          │          │          │          │             │
                   └──────────┴──────────┴──────────┴──────────┴─────────────┘
                        │
                        ▼
@@ -709,10 +808,11 @@ Uploads (M3) is now complete. Remaining modules will be implemented in milestone
                └──────────────┘
 ```
 
-✅ = implemented; (analysis ✅) = all analysis submodules (discovery, 4 detectors, metrics, pipeline, writer, API integration, retrieval API) implemented and tested (407 tests); everything else is scaffolded.
+✅ = implemented; analysis ✅ = all submodules (discovery, 4 detectors, metrics, pipeline, writer, API, retrieval, dashboard) — 465 existing tests; AI ✅ = 6 endpoints, provider abstraction, prompt system, 72 tests; everything else is scaffolded.
 
 ### Next Milestones
 
-- **M5.4 (Performance & Optimisation):** Caching (TTLCache → Redis), performance tuning, query optimisation
-- **M6 (AI & Dashboard):** Implement `ai` module (project summary, file explanation, documentation generation, recommendations); extend dashboard with `HealthSection`, AI insights; implement `reports` and `documentation` modules
-- **M7 (Finalization):** Testing, bug fixes, deployment configuration, remaining documentation
+- **M6 (AI Module):** ✅ 6 POST endpoints, LiteLLM provider abstraction (OpenAI/Anthropic/Gemini/Ollama), Jinja2 prompt system, ContextBuilder, 72 tests — 537 total passing
+- **M7 (Dashboard Frontend):** Initialize React + TypeScript + Vite + TailwindCSS frontend; implement analysis dashboard with query builder, metric charts, file explorer, AI insights display, user settings
+- **M8 (Report Export):** Implement reports module (PDF/HTML export of analysis results), documentation module (auto-generated docs from analysis data), modernization module (step-by-step migration plans)
+- **M9 (Finalization):** Testing, bug fixes, deployment configuration, remaining documentation

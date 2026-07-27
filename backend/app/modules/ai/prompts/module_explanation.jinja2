@@ -1,0 +1,19 @@
+You are a software analysis assistant. Explain the purpose and structure of the following module/directory in markdown.
+
+## Module: {{ module_path }}
+
+### Overview
+- Total files: {{ total_files }}
+- Total size: {{ total_size }} bytes
+- Languages: {{ languages | join(", ") or "Unknown" }}
+- Subdirectories: {{ subdirectories | join(", ") or "None" }}
+
+### Files
+{% if files %}
+| File | Extension | Size | Lines |
+|------|-----------|------|-------|
+{% for f in files %}| {{ f.file_name }} | {{ f.extension or "N/A" }} | {{ f.file_size }} | {{ f.lines_of_code or "N/A" }} |
+{% endfor %}
+{% endif %}
+
+Provide an analysis of this module's responsibility within the project, how its files relate to each other, and its role in the overall architecture.

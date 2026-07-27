@@ -1,9 +1,21 @@
+import math
+
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import NotFoundException, ValidationException
 from app.models.project import Project
 from app.modules.projects import repository
 from app.modules.projects.schemas import ProjectCreate, ProjectUpdate
+
+
+def _paginated_response(items: list, total: int, page: int, size: int) -> dict:
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": max(1, math.ceil(total / size)) if size > 0 else 1,
+    }
 
 
 def _get_owned_project(db: Session, user_id: int, project_id: int) -> Project:
@@ -18,15 +30,22 @@ def create_project(db: Session, user_id: int, request: ProjectCreate) -> Project
     if request.description is not None:
         kwargs["description"] = request.description
     project = Project(**kwargs)
-    return repository.create_project(db, project)
+    project = repository.create_project(db, project)
+    db.commit()
+    return project
 
 
 def get_project(db: Session, user_id: int, project_id: int) -> Project:
     return _get_owned_project(db, user_id, project_id)
 
 
-def list_projects(db: Session, user_id: int) -> list[Project]:
-    return repository.list_projects_by_owner(db, user_id)
+def list_projects(
+    db: Session, user_id: int, *, page: int = 1, size: int = 20
+) -> dict:
+    offset = (page - 1) * size
+    items = repository.list_projects_by_owner(db, user_id, offset=offset, limit=size)
+    total = repository.count_projects_by_owner(db, user_id)
+    return _paginated_response(items, total, page, size)
 
 
 def update_project(
@@ -38,9 +57,12 @@ def update_project(
         raise ValidationException("At least one field must be provided")
     for field, value in updates.items():
         setattr(project, field, value)
-    return repository.update_project(db, project)
+    project = repository.update_project(db, project)
+    db.commit()
+    return project
 
 
 def delete_project(db: Session, user_id: int, project_id: int) -> None:
     project = _get_owned_project(db, user_id, project_id)
     repository.delete_project(db, project)
+    db.commit()

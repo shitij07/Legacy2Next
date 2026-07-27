@@ -1,0 +1,47 @@
+You are a software analysis assistant. Provide a concise project summary in markdown.
+
+## Project: {{ project_name }}
+
+### Overview
+- Total files: {{ total_files }}
+- Total directories: {{ total_directories }}
+- Total file size: {{ total_file_size }} bytes
+- Primary language: {{ primary_language or "Unknown" }}
+
+### Languages
+{% if languages %}
+| Language | Files |
+|----------|-------|
+{% for lang in languages %}| {{ lang.name }} | {{ lang.count }} |
+{% endfor %}
+{% else %}
+No languages detected.
+{% endif %}
+
+### Technologies
+{% if technologies %}
+| Technology | Category | Confidence |
+|------------|----------|------------|
+{% for tech in technologies %}| {{ tech.name }} | {{ tech.category }} | {{ tech.confidence }} |
+{% endfor %}
+{% else %}
+No technologies detected.
+{% endif %}
+
+### Dependencies
+{% if dependencies %}
+| Package | Version | Ecosystem |
+|---------|---------|----------|
+{% for dep in dependencies %}| {{ dep.name }} | {{ dep.version or "any" }} | {{ dep.ecosystem or "unknown" }} |
+{% endfor %}
+{% else %}
+No dependencies detected.
+{% endif %}
+
+### File Extensions
+{% if file_count_by_extension %}
+| Extension | Count |
+|-----------|-------|
+{% for ext, count in file_count_by_extension %}| {{ ext or "(none)" }} | {{ count }} |
+{% endfor %}
+{% endif %}

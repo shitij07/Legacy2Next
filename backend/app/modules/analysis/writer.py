@@ -54,6 +54,7 @@ class AnalysisWriter:
                 "extension": f.extension,
                 "file_size": f.file_size,
                 "language": f.language,
+                "is_directory": f.is_directory,
             }
             for f in results.all_files
         ]

@@ -30,3 +30,11 @@ class ProjectResponse(BaseModel):
 
 class ProjectListResponse(BaseModel):
     projects: list[ProjectResponse]
+
+
+class PaginatedProjectListResponse(BaseModel):
+    items: list[ProjectResponse]
+    total: int
+    page: int
+    size: int
+    pages: int

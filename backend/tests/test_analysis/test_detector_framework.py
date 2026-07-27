@@ -390,9 +390,11 @@ class TestLanguageDetector:
         assert result.technologies[0].name == "Python"
         assert result.technologies[0].category == "language"
         assert "3 files (100%)" in result.technologies[0].evidence
-        assert len(result.files) == 3
+        file_count = sum(1 for f in result.files if not f.is_directory)
+        assert file_count == 3
         for f in result.files:
-            assert f.language == "Python"
+            if not f.is_directory:
+                assert f.language == "Python"
 
     def test_mixed_languages(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -408,7 +410,8 @@ class TestLanguageDetector:
         assert result.error is None
         names = {t.name for t in result.technologies}
         assert names == {"Python", "JavaScript", "CSS", "HTML"}
-        assert len(result.files) == 4
+        file_count = sum(1 for f in result.files if not f.is_directory)
+        assert file_count == 4
 
     def test_unknown_extensions(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -472,7 +475,7 @@ class TestLanguageDetector:
         assert len(python) == 1
         assert len(unknown) == 1
         assert unknown[0].confidence == "low"
-        noext_files = [f for f in result.files if f.language is None]
+        noext_files = [f for f in result.files if f.language is None and not f.is_directory]
         assert len(noext_files) == 2
 
     def test_large_project(self):

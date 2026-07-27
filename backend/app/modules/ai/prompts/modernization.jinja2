@@ -1,0 +1,20 @@
+You are a software modernization consultant. Provide actionable modernization recommendations in markdown.
+
+## Modernization Recommendations: {{ project_name }}
+
+### Project Profile
+- Total files: {{ total_files }}
+- Languages: {{ languages | join(", ") or "Unknown" }}
+- Technologies detected: {% if technologies %}{{ technologies | map(attribute="name") | join(", ") }}{% else %}None{% endif %}
+- Total dependencies: {{ total_dependencies }}
+- Total technologies: {{ total_technologies }}
+
+{% if dependencies %}
+### Current Dependencies
+| Package | Version | Ecosystem |
+|---------|---------|----------|
+{% for dep in dependencies %}| {{ dep.name }} | {{ dep.version or "any" }} | {{ dep.ecosystem or "unknown" }} |
+{% endfor %}
+{% endif %}
+
+Provide modernization recommendations covering: dependency upgrades, framework migrations, language version updates, architecture improvements, testing strategy, and DevOps considerations. Prioritise recommendations by impact and effort.

@@ -33,6 +33,7 @@ class DetectedFile:
     extension: str
     file_size: int
     language: str | None = None
+    is_directory: bool = False
 
 
 @dataclass(frozen=True)

@@ -3,7 +3,7 @@
 **Project:** Legacy2Next
 **Purpose:** Definitive reference for the implemented HTTP API.
 **Version:** 0.2.0
-**Current API Coverage:** 13 endpoints — Health (1) + Authentication (3) + Projects (5) + Uploads (4)
+**Current API Coverage:** See `GET /openapi.json` for the authoritative list of endpoints
 **Last Updated:** 2026-07-26
 
 ---

@@ -48,7 +48,7 @@ def list_analyses_by_project(db: Session, project_id: int) -> list[Analysis]:
 def create_analysis(db: Session, data: dict) -> Analysis:
     analysis = Analysis(**data)
     db.add(analysis)
-    db.commit()
+    db.flush()
     db.refresh(analysis)
     return analysis
 
@@ -58,14 +58,12 @@ def set_analysis_status(db: Session, analysis_id: int, status: str) -> Analysis 
     if analysis is None:
         return None
     analysis.status = status
-    db.commit()
-    db.refresh(analysis)
     return analysis
 
 
 def delete_analysis(db: Session, analysis: Analysis) -> None:
     db.delete(analysis)
-    db.commit()
+    db.flush()
 
 
 def get_technology(db: Session, name: str, category: str) -> Technology | None:
@@ -82,7 +80,7 @@ def ensure_technology(db: Session, name: str, category: str) -> Technology:
         return tech
     tech = Technology(name=name, category=category)
     db.add(tech)
-    db.commit()
+    db.flush()
     db.refresh(tech)
     return tech
 
@@ -106,7 +104,7 @@ def add_analysis_technology(
         confidence=confidence,
     )
     db.add(at)
-    db.commit()
+    db.flush()
     db.refresh(at)
     return at
 
@@ -116,7 +114,7 @@ def remove_analysis_technology(db: Session, analysis_technology_id: int) -> None
     if at is None:
         return
     db.delete(at)
-    db.commit()
+    db.flush()
 
 
 def list_analysis_files(db: Session, analysis_id: int) -> list[AnalysisFile]:
@@ -131,7 +129,7 @@ def list_analysis_files(db: Session, analysis_id: int) -> list[AnalysisFile]:
 def add_analysis_file(db: Session, analysis_id: int, data: dict) -> AnalysisFile:
     af = AnalysisFile(analysis_id=analysis_id, **data)
     db.add(af)
-    db.commit()
+    db.flush()
     db.refresh(af)
     return af
 
@@ -141,7 +139,7 @@ def remove_analysis_file(db: Session, file_id: int) -> None:
     if af is None:
         return
     db.delete(af)
-    db.commit()
+    db.flush()
 
 
 def list_dependencies(db: Session, analysis_id: int) -> list[Dependency]:
@@ -160,7 +158,7 @@ def get_dependency(db: Session, dependency_id: int) -> Dependency | None:
 def add_dependency(db: Session, analysis_id: int, data: dict) -> Dependency:
     dep = Dependency(analysis_id=analysis_id, **data)
     db.add(dep)
-    db.commit()
+    db.flush()
     db.refresh(dep)
     return dep
 
@@ -170,7 +168,7 @@ def remove_dependency(db: Session, dependency_id: int) -> None:
     if dep is None:
         return
     db.delete(dep)
-    db.commit()
+    db.flush()
 
 
 def get_metric(db: Session, analysis_id: int, key: str) -> Metric | None:
@@ -185,12 +183,12 @@ def set_metric(db: Session, analysis_id: int, key: str, value: int) -> Metric:
     metric = get_metric(db, analysis_id, key)
     if metric is not None:
         metric.value = value
-        db.commit()
+        db.flush()
         db.refresh(metric)
         return metric
     metric = Metric(analysis_id=analysis_id, key=key, value=value)
     db.add(metric)
-    db.commit()
+    db.flush()
     db.refresh(metric)
     return metric
 

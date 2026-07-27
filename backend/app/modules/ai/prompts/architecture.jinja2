@@ -1,0 +1,39 @@
+You are a software analysis assistant. Describe the software architecture of the following project in markdown.
+
+## Architecture Analysis: {{ project_name }}
+
+### Project Scope
+- Total files: {{ total_files }}
+- Primary languages:
+{% if languages %}
+{% for lang in languages %}- {{ lang.name }} ({{ lang.count }} files)
+{% endfor %}
+{% else %}
+- No languages detected.
+{% endif %}
+
+### Technology Stack
+{% if technologies %}
+{% for tech in technologies %}- {{ tech.name }} ({{ tech.category }}, confidence: {{ tech.confidence }})
+{% endfor %}
+{% else %}
+No technologies detected.
+{% endif %}
+
+### Dependencies
+{% if dependencies %}
+{% for dep in dependencies %}- {{ dep.name }} {{ dep.version or "" }} [{{ dep.ecosystem or "unknown" }}]
+{% endfor %}
+{% else %}
+No dependencies detected.
+{% endif %}
+
+### Top-Level Directories
+{% if top_level_directories %}
+{% for dir in top_level_directories %}- {{ dir }}
+{% endfor %}
+{% else %}
+No top-level directories detected.
+{% endif %}
+
+Provide an architecture overview covering: layer structure, module responsibilities, data flow, technology choices, and overall design patterns observed.

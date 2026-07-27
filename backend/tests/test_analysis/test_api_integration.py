@@ -121,9 +121,9 @@ class TestSuccessfulAnalysis:
 
         analysis = db_session.query(Analysis).first()
         files = db_session.query(AnalysisFile).filter(AnalysisFile.analysis_id == analysis.id).all()
-        assert len(files) == 2
+        assert len(files) == 3
         paths = sorted(f.relative_path for f in files)
-        assert paths == ["app.py", "utils.py"]
+        assert paths == [".", "app.py", "utils.py"]
 
     def test_technologies_persisted(self, db_session: Session, temp_upload_root: Path, user: User, project: Project):
         _write_file(temp_upload_root, project, "app.py", "x = 1")
@@ -429,7 +429,7 @@ class TestEndToEnd:
         assert analysis.completed_at is not None
 
         files = db_session.query(AnalysisFile).filter(AnalysisFile.analysis_id == analysis.id).all()
-        assert len(files) == 2
+        assert len(files) == 3
 
         from app.models.metric import Metric
         metrics = db_session.query(Metric).filter(Metric.analysis_id == analysis.id).all()

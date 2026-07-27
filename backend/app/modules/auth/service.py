@@ -16,7 +16,9 @@ def register(db: Session, request: RegisterRequest) -> User:
         "password_hash": hash_password(request.password),
         "name": request.name,
     }
-    return repository.create(db, data)
+    user = repository.create(db, data)
+    db.commit()
+    return user
 
 
 def login(db: Session, request: LoginRequest) -> TokenResponse:

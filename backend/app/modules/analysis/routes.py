@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
@@ -42,7 +43,7 @@ def list_project_analyses(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
-    size: int = Query(20, ge=1, le=100),
+    size: int = Query(settings.DEFAULT_PAGE_SIZE_LIST, ge=1, le=settings.MAX_PAGE_SIZE_LIST),
     sort_by: str = "created_at",
     sort_dir: str = "desc",
 ):
@@ -63,7 +64,7 @@ def list_upload_analyses(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
-    size: int = Query(20, ge=1, le=100),
+    size: int = Query(settings.DEFAULT_PAGE_SIZE_LIST, ge=1, le=settings.MAX_PAGE_SIZE_LIST),
     sort_by: str = "created_at",
     sort_dir: str = "desc",
 ):
@@ -110,7 +111,7 @@ def get_analysis_files(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=200),
+    size: int = Query(settings.DEFAULT_PAGE_SIZE_SUBRESOURCE, ge=1, le=settings.MAX_PAGE_SIZE_SUBRESOURCE),
     extension: str | None = None,
     language: str | None = None,
     is_directory: bool | None = None,
@@ -152,7 +153,7 @@ def get_analysis_dependencies(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=200),
+    size: int = Query(settings.DEFAULT_PAGE_SIZE_SUBRESOURCE, ge=1, le=settings.MAX_PAGE_SIZE_SUBRESOURCE),
     ecosystem: str | None = None,
     type: str | None = None,
     search: str | None = Query(None, min_length=2),
@@ -192,7 +193,7 @@ def get_analysis_warnings(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=200),
+    size: int = Query(settings.DEFAULT_PAGE_SIZE_SUBRESOURCE, ge=1, le=settings.MAX_PAGE_SIZE_SUBRESOURCE),
     detector_name: str | None = None,
     search: str | None = Query(None, min_length=2),
     sort_by: str = "created_at",

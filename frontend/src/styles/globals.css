@@ -1,0 +1,114 @@
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/600.css';
+@import '@fontsource/jetbrains-mono/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary-50: #eef2ff;
+    --color-primary-100: #e0e7ff;
+    --color-primary-200: #c7d2fe;
+    --color-primary-400: #6366f1;
+    --color-primary-500: #4f46e5;
+    --color-primary-600: #4338ca;
+    --color-primary-700: #3730a3;
+    --color-primary-900: #1e1b4b;
+
+    --color-neutral-50: #fafafa;
+    --color-neutral-100: #f5f5f5;
+    --color-neutral-200: #e5e5e5;
+    --color-neutral-300: #d4d4d4;
+    --color-neutral-400: #a3a3a3;
+    --color-neutral-500: #737373;
+    --color-neutral-600: #525252;
+    --color-neutral-700: #3f3f3f;
+    --color-neutral-800: #2a2a2a;
+    --color-neutral-900: #141414;
+    --color-neutral-950: #0a0a0a;
+
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-info: #3b82f6;
+
+    --color-border: #e5e5e5;
+    --color-border-hover: #d4d4d4;
+    --color-border-strong: #a3a3a3;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+
+    --z-dropdown: 10;
+    --z-sticky: 20;
+    --z-overlay: 30;
+    --z-modal: 40;
+    --z-toast: 50;
+    --z-tooltip: 60;
+  }
+
+  .dark {
+    --color-primary-50: #eef2ff;
+    --color-primary-100: #e0e7ff;
+    --color-primary-200: #c7d2fe;
+    --color-primary-400: #818cf8;
+    --color-primary-500: #6366f1;
+    --color-primary-600: #4f46e5;
+    --color-primary-700: #4338ca;
+    --color-primary-900: #1e1b4b;
+
+    --color-neutral-50: #0a0a0a;
+    --color-neutral-100: #141414;
+    --color-neutral-200: #1f1f1f;
+    --color-neutral-300: #2a2a2a;
+    --color-neutral-400: #3f3f3f;
+    --color-neutral-500: #525252;
+    --color-neutral-600: #737373;
+    --color-neutral-700: #a3a3a3;
+    --color-neutral-800: #d4d4d4;
+    --color-neutral-900: #fafafa;
+    --color-neutral-950: #ffffff;
+
+    --color-border: #2a2a2a;
+    --color-border-hover: #3f3f3f;
+    --color-border-strong: #525252;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+  }
+
+  body {
+    @apply bg-neutral-50 text-neutral-800 antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  ::selection {
+    background-color: rgb(99 102 241 / 0.2);
+  }
+
+  * {
+    border-color: var(--color-border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

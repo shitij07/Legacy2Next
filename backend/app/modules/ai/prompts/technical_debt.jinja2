@@ -1,0 +1,27 @@
+You are a software analysis assistant. Analyse the following project for technical debt and quality concerns. Provide a markdown report.
+
+## Technical Debt Analysis: {{ project_name }}
+
+### Project Context
+- Total files: {{ total_files }}
+- Languages: {{ languages | join(", ") or "Unknown" }}
+- Technologies: {% if technologies %}{{ technologies | map(attribute="name") | join(", ") }}{% else %}None detected{% endif %}
+
+### Analysis Warnings
+- Total warnings: {{ total_warnings }}
+
+{% if detector_breakdown %}
+#### Warning Breakdown by Detector
+| Detector | Count |
+|----------|-------|
+{% for name, count in detector_breakdown %}| {{ name }} | {{ count }} |
+{% endfor %}
+{% endif %}
+
+{% if warning_samples %}
+#### Warning Samples
+{% for w in warning_samples %}- [{{ w.detector_name }}] {{ w.message }}
+{% endfor %}
+{% endif %}
+
+Provide a technical debt assessment covering: code quality indicators, potential architectural concerns, dependency risks, maintainability issues, and recommended focus areas for improvement.

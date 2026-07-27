@@ -14,6 +14,6 @@ def get_by_id(db: Session, user_id: int) -> User | None:
 def create(db: Session, data: dict) -> User:
     user = User(**data)
     db.add(user)
-    db.commit()
+    db.flush()
     db.refresh(user)
     return user

@@ -1,5 +1,9 @@
+import logging
+import time
+
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.exceptions import NotFoundException
 from app.modules.analysis import repository
 from app.modules.analysis.query_options import (
@@ -8,6 +12,7 @@ from app.modules.analysis.query_options import (
     QueryOptions,
     WarningFilter,
 )
+
 from app.modules.analysis.schemas import (
     AnalysisDependencyResponse,
     AnalysisFileResponse,
@@ -18,6 +23,8 @@ from app.modules.analysis.schemas import (
     AnalysisWarningResponse,
     PaginatedResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 
 _FILE_SORT_FIELDS = {"relative_path", "file_size", "extension", "language"}
@@ -64,8 +71,9 @@ def _duration_ms(analysis) -> int | None:
 
 
 def get_analysis_summary(db: Session, user_id: int, analysis_id: int) -> AnalysisSummaryResponse:
+    _start = time.perf_counter()
     analysis = _get_owned_analysis(db, user_id, analysis_id)
-    return AnalysisSummaryResponse(
+    result = AnalysisSummaryResponse(
         analysis_id=analysis.id,
         upload_id=analysis.upload_id,
         status=analysis.status,
@@ -79,6 +87,13 @@ def get_analysis_summary(db: Session, user_id: int, analysis_id: int) -> Analysi
         metric_count=len(repository.list_metrics(db, analysis.id)),
         warning_count=repository.count_warnings(db, analysis.id),
     )
+
+    _elapsed_ms = (time.perf_counter() - _start) * 1000
+    if _elapsed_ms >= settings.SLOW_SERVICE_THRESHOLD_MS:
+        logger.warning("get_analysis_summary(%d) took %.0fms", analysis_id, _elapsed_ms)
+    else:
+        logger.info("get_analysis_summary(%d) took %.0fms", analysis_id, _elapsed_ms)
+    return result
 
 
 def get_analysis_files(

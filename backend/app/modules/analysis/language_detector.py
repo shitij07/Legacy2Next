@@ -63,6 +63,19 @@ class LanguageDetector(BaseDetector):
 
         all_files = [f for lst in lang_files.values() for f in lst] + unknown_files
 
+        directory_files: list[DetectedFile] = []
+        for node in file_graph.directories:
+            directory_files.append(DetectedFile(
+                relative_path=node.relative_path,
+                file_name=node.directory_name,
+                extension="",
+                file_size=0,
+                language=None,
+                is_directory=True,
+            ))
+
+        all_files.extend(directory_files)
+
         return DetectorResult(
             detector_name=self.detector_name,
             technologies=tuple(technologies),
