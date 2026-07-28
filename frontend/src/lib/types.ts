@@ -222,3 +222,19 @@ export interface AnalysisWarningsParams {
   sort_by?: string
   sort_dir?: string
 }
+
+export interface AIResponse {
+  analysis_id: number
+  feature: string
+  content: string
+  model: string
+}
+
+export interface AIFeatureSection {
+  title: string
+  description: string
+  generate: () => void
+  isGenerating: boolean
+  response: AIResponse | null
+  error: Error | null
+}

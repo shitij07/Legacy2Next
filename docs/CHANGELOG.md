@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-07-28 — M11 AI Workspace Frontend
+
+### Added
+- `frontend/src/lib/types.ts` — Added `AIResponse` type (analysis_id, feature, content, model), `AIFeatureSection` interface
+- `frontend/src/services/ai.ts` — 6 API service functions:
+  - `generateSummary()`, `generateArchitecture()`, `generateTechnicalDebt()`, `generateModernization()` (POST, no body)
+  - `generateFileExplanation()` (POST /file/{fileId}/explain)
+  - `generateModuleExplanation()` (POST /module, body: `{ module_path }`)
+- `frontend/src/hooks/useAI.ts` — 6 mutation hooks (useGenerateSummary, useGenerateArchitecture, useGenerateTechnicalDebt, useGenerateModernization, useGenerateFileExplanation, useGenerateModuleExplanation) with retry (1), success/error toasts via sonner
+- `frontend/src/features/ai/` — New AI Workspace feature module:
+  - `pages/AIWorkspacePage.tsx` — Main page with 2-column card grid, project/analysis header, refresh, navigation to dashboard/explorer
+  - `components/common/AIResponseCard.tsx` — Reusable card wrapper: generate button, loading skeleton, markdown display, copy/regenerate buttons, error state
+  - `components/common/GenerateButton.tsx` — Sparkle icon button with loading state
+  - `components/common/CopyButton.tsx` — Clipboard copy with check feedback
+  - `components/common/MarkdownViewer.tsx` — Wraps existing MarkdownRenderer
+  - `components/common/LoadingSkeleton.tsx` — Content skeleton for AI generation
+  - `components/common/ErrorCard.tsx` — Error display with warning icon
+  - `components/common/PromptHeader.tsx` — Title + description header
+  - `components/common/SectionCard.tsx` — Card wrapper
+  - `components/summary/SummarySection.tsx` — Project summary card
+  - `components/architecture/ArchitectureSection.tsx` — Architecture analysis card
+  - `components/technicalDebt/TechnicalDebtSection.tsx` — Technical debt card
+  - `components/modernization/ModernizationSection.tsx` — Modernization recommendations card
+  - `components/fileExplanation/FileExplanationSection.tsx` — File selector dialog + explanation card
+  - `components/moduleExplanation/ModuleExplanationSection.tsx` — Module path input + explanation card
+- `frontend/src/routes/projects.routes.tsx` — Added `/projects/:projectId/analyses/:analysisId/ai` route
+
+### Changed
+- `docs/ROUTES.md` — Added AI Workspace route to route table and structure diagram
+- `docs/API_INTEGRATION.md` — Added AI endpoints table and data flow for AIWorkspacePage
+- `docs/ARCHITECTURE.md` — Updated frontend folder structure with ai/ module, added AI workspace routes, updated version to 0.7.0, next milestones marked as complete
+
 ## 2026-07-28 — M10A Analysis Overview Dashboard + M7-M9 Frontend
 
 ### Added

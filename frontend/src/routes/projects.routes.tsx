@@ -4,6 +4,7 @@ import { ProjectWorkspacePage } from '@/features/projects/pages/ProjectWorkspace
 import { UploadsPage } from '@/features/uploads/pages/UploadsPage'
 import { AnalysisDashboardPage } from '@/features/analysis/pages/AnalysisDashboardPage'
 import { AnalysisExplorerPage } from '@/features/analysis/pages/AnalysisExplorerPage'
+import { AIWorkspacePage } from '@/features/ai/pages/AIWorkspacePage'
 
 export const projectsRoutes = {
   element: <DashboardLayout />,
@@ -13,5 +14,6 @@ export const projectsRoutes = {
     { path: 'projects/:projectId/uploads', element: <UploadsPage /> },
     { path: 'projects/:projectId/analyses/:analysisId', element: <AnalysisDashboardPage /> },
     { path: 'projects/:projectId/analyses/:analysisId/explorer', element: <AnalysisExplorerPage /> },
+    { path: 'projects/:projectId/analyses/:analysisId/ai', element: <AIWorkspacePage /> },
   ],
 }

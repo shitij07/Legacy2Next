@@ -14,6 +14,8 @@
 | `/projects/:projectId` | `ProjectWorkspacePage` | Yes | Project detail with metadata, stats, quick actions, activity |
 | `/projects/:projectId/uploads` | `UploadsPage` | Yes | Upload files with dropzone, view uploads list, processing status |
 | `/projects/:projectId/analysis/:analysisId/dashboard` | `AnalysisDashboardPage` | Yes | Analysis overview dashboard with summary, metrics, charts, warnings |
+| `/projects/:projectId/analysis/:analysisId/explorer` | `AnalysisExplorerPage` | Yes | Browse analysis data: files, technologies, dependencies, warnings, metrics |
+| `/projects/:projectId/analysis/:analysisId/ai` | `AIWorkspacePage` | Yes | AI-powered insights: summary, architecture, technical debt, modernization, file/module explanations |
 
 ---
 
@@ -26,6 +28,8 @@
   └── /projects/:projectId      # ProjectWorkspacePage
   └── /projects/:projectId/uploads   # UploadsPage
   └── /projects/:projectId/analysis/:analysisId/dashboard  # AnalysisDashboardPage
+  └── /projects/:projectId/analysis/:analysisId/explorer   # AnalysisExplorerPage
+  └── /projects/:projectId/analysis/:analysisId/ai         # AIWorkspacePage
 ```
 
 ---

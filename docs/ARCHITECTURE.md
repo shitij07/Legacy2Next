@@ -18,7 +18,7 @@
 
 Legacy2Next is a FastAPI backend + React frontend for legacy software analysis and modernization. At v0.6.0 the backend has a complete authentication system, Projects CRUD, Uploads module, full Analysis pipeline (discovery, 4 detectors, metrics, writer, retrieval API, dashboard aggregation), and an AI module with 6 on-demand generation endpoints. The frontend implements project management, file uploads with processing status, and an analysis overview dashboard with Recharts visualisations.
 
-**Phase:** Development (Milestone 10B — Detailed Report Frontend).
+**Phase:** Development (Milestone 11 — AI Workspace Frontend).
 
 **What exists today:**
 
@@ -40,7 +40,7 @@ Legacy2Next is a FastAPI backend + React frontend for legacy software analysis a
 | Test scaffolding (pytest, TestClient, 8 test directories) | Scaffolded |
 | AI module (6 POST endpoints, provider abstraction, prompt system, context builder) | Implemented (M6) |
 | 3 remaining modules (documentation, modernization, reports) | Scaffolded — routes/services/schemas/repository stubs |
-| Frontend (React 19 + TypeScript + Vite + TailwindCSS 4 + React Router 7 + TanStack Query) | Implemented (Projects, Uploads, Analysis Dashboard) |
+| Frontend (React 19 + TypeScript + Vite + TailwindCSS 4 + React Router 7 + TanStack Query) | Implemented (Projects, Uploads, Analysis Dashboard, Analysis Explorer, AI Workspace) |
 | Background workers, integrations (ai provider) | Placeholder directories (workers); integrations/ai/ implemented |
 
 ---
@@ -752,11 +752,29 @@ frontend/src/
 │   ├── uploads/                 # File upload management
 │   │   ├── pages/               # UploadsPage
 │   │   └── components/          # UploadDropzone, UploadCard, UploadList
-│   └── analysis/                # Analysis dashboard
-│       ├── pages/               # AnalysisDashboardPage
+│   ├── analysis/                # Analysis dashboard + explorer
+│   │   ├── pages/               # AnalysisDashboardPage, AnalysisExplorerPage
+│   │   └── components/
+│   │       ├── explorer/        # DataTable, PaginationBar
+│   │       ├── files/           # FilesTab
+│   │       ├── technologies/    # TechnologiesTab
+│   │       ├── dependencies/    # DependenciesTab
+│   │       ├── warnings/        # WarningsTab
+│   │       └── metrics/         # MetricsTab
+│   └── ai/                      # AI workspace
+│       ├── api/                 # AI service re-exports
+│       ├── hooks/               # AI hook re-exports
+│       ├── pages/               # AIWorkspacePage
+│       ├── types/               # AI type re-exports
 │       └── components/
-│           └── dashboard/       # DashboardSummary, MetricsCards, RiskIndicator, TopFindings, RecommendedNextSteps, FileLanguageChart, TechnologyChart, DependencyEcosystemChart
-├── hooks/                       # React Query hooks (useProjects, useUploads, useUploadAnalysisStatus, useAnalysis)
+│           ├── common/          # AIResponseCard, GenerateButton, CopyButton, MarkdownViewer, LoadingSkeleton, ErrorCard, PromptHeader, SectionCard
+│           ├── summary/         # SummarySection
+│           ├── architecture/    # ArchitectureSection
+│           ├── technicalDebt/   # TechnicalDebtSection
+│           ├── modernization/   # ModernizationSection
+│           ├── fileExplanation/ # FileExplanationSection
+│           └── moduleExplanation/ # ModuleExplanationSection
+├── hooks/                       # React Query hooks (useProjects, useUploads, useUploadAnalysisStatus, useAnalysis, useDebounce, useAI)
 ├── layouts/                     # RootLayout (Sidebar + Header + Outlet)
 ├── lib/                         # Shared types, query keys, utilities
 ├── routes/                      # React Router config (4 routes)
@@ -783,6 +801,8 @@ frontend/src/
 | `/projects/:projectId` | ProjectWorkspacePage | Project detail |
 | `/projects/:projectId/uploads` | UploadsPage | File upload + processing |
 | `/projects/:projectId/analysis/:analysisId/dashboard` | AnalysisDashboardPage | Overview dashboard |
+| `/projects/:projectId/analysis/:analysisId/explorer` | AnalysisExplorerPage | Browse analysis data (files, technologies, dependencies, warnings, metrics) |
+| `/projects/:projectId/analysis/:analysisId/ai` | AIWorkspacePage | AI-powered insights (summary, architecture, technical debt, modernization, explanations) |
 
 ## Planned Modules
 
@@ -817,7 +837,7 @@ Uploads (M3), Analysis (M4/M5), and AI (M6) are now complete. Remaining modules:
 
 ## Architecture Evolution
 
-### Current Milestone — Milestone 10B (Detailed Report Frontend)
+### Current Milestone — Milestone 11 (AI Workspace Frontend)
 
 ```
                                                                       ┌──────────────────┐
@@ -855,14 +875,14 @@ Uploads (M3), Analysis (M4/M5), and AI (M6) are now complete. Remaining modules:
                └──────────────┘
 ```
 
-✅ = implemented; analysis ✅ = all submodules (discovery, 4 detectors, metrics, pipeline, writer, API, retrieval, dashboard) — 465 existing tests; AI ✅ = 6 endpoints, provider abstraction, prompt system, 72 tests; frontend ✅ = projects CRUD, uploads, processing, dashboard; everything else is scaffolded.
+✅ = implemented; analysis ✅ = all submodules (discovery, 4 detectors, metrics, pipeline, writer, API, retrieval, dashboard) — 465 existing tests; AI ✅ = 6 endpoints, provider abstraction, prompt system, 72 tests; frontend ✅ = projects CRUD, uploads, processing, dashboard, analysis explorer, AI workspace; everything else is scaffolded.
 
 ### Next Milestones
 
 - **M7 (Projects Frontend + Workspace):** ✅ ProjectsPage, ProjectWorkspacePage, CRUD, metadata, stats, quick actions
 - **M8 (Upload & Analysis Frontend):** ✅ UploadsPage with dropzone, UploadCard with 5 processing states, polling
 - **M9 (Analysis Overview Dashboard):** ✅ DashboardSummary, MetricsCards, RiskIndicator, TopFindings, Charts, 4-state UI
-- **M10B (Detailed Report Frontend):** 🔄 File-level insights, dependency deep-dive, warning details, technology stack explorer
-- **M10C (AI Insights Integration):** AI summary generation, file/module explanation, modernization recommendations UI
+- **M10B (Detailed Report Frontend):** ✅ File-level insights, dependency deep-dive, warning details, technology stack explorer (AnalysisExplorerPage, FilesTab, TechnologiesTab, DependenciesTab, WarningsTab, MetricsTab)
+- **M11 (AI Workspace):** ✅ AI summary, architecture, technical debt, modernization, file/module explanation (AIWorkspacePage, AIResponseCard, 6 section components, 6 mutation hooks)
 - **M11 (Reports & Documentation Frontend):** Report export UI, documentation viewer, migration plans
 - **M12 (Finalization):** Testing, bug fixes, deployment configuration, remaining documentation

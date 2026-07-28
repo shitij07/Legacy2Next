@@ -18,7 +18,7 @@
 
 Project Name: Legacy2Next
 
-Version: 0.6.0
+Version: 0.7.0
 
 Current Phase: Development
 
@@ -34,19 +34,19 @@ Last Updated: 2026-07-28
 
 # Current Goal
 
-Milestone 10B — Analysis Detailed Report
+Milestone 11 — AI Workspace Frontend
 
 ---
 
 # Current Task
 
-M10B Detailed Breakdown Pages Implementation
+M11 AI Workspace Frontend Implementation
 
 ---
 
 # Current Focus
 
-M10A Analysis Overview Dashboard complete: 3 API hooks (useAnalysisDashboard, useAnalysisMetrics, useAnalysisTechnologies, useAnalysisWarnings), 6 dashboard components (DashboardSummary, MetricsCards, RiskIndicator, TopFindings, RecommendedNextSteps), 3 Recharts charts (FileLanguageChart, TechnologyChart, DependencyEcosystemChart), AnalysisDashboardPage with all 4 states (loading, empty, error, data).
+M11 AI Workspace Frontend complete: 6 AI mutation hooks, AI Workspace page with 6 section components (Summary, Architecture, Technical Debt, Modernization, File Explanation, Module Explanation), shared AI components (AIResponseCard, MarkdownViewer, GenerateButton, CopyButton, etc.), route `/projects/:projectId/analyses/:analysisId/ai`. TypeScript, ESLint, and production build all passing.
 
 ---
 
@@ -83,12 +83,14 @@ M10A Analysis Overview Dashboard complete: 3 API hooks (useAnalysisDashboard, us
 - M9A Upload Management: `services/upload.ts` (getUploads, uploadFile multipart, deleteUpload, UPLOAD_CONSTRAINTS, formatFileSize), `hooks/useUploads.ts` (useUploads, useUploadFile, useDeleteUpload with optimistic updates + toasts), `features/uploads/components/` (UploadDropzone, UploadCard, UploadList), `features/uploads/pages/UploadsPage.tsx`, root layout navigation updated with Upload link, route `/projects/:projectId/uploads`
 - M9B Upload Processing: `services/analysis.ts` (getUploadAnalyses, getAnalysisSummary), `hooks/useUploadAnalysisStatus.ts` (useUploadAnalysisStatuses with 5s polling, auto-stop on terminal status), `hooks/useUploads.ts` (refetchInterval: 10_000), `lib/types.ts` (AnalysisListItem), `hook/useProjects.ts` queryKeys extended; UploadCard updated with 5 processing states (uploaded/analysing/completed/completed_with_errors/failed), status badge, loading spinner, conditional navigation
 - M10A Analysis Overview Dashboard: `lib/types.ts` (14+ dashboard types: DashboardResponse, GeneralSection, FilesSection, TechnologiesSection, DependenciesSection, WarningsSection, MetricsSection, RiskLevel, etc.), `services/analysis.ts` (getAnalysisDashboard, getAnalysisMetrics, getAnalysisTechnologies, getAnalysisWarnings), `hooks/useAnalysis.ts` (5 hooks: useAnalysisDashboard, useAnalysisMetrics, useAnalysisTechnologies, useAnalysisWarnings, useAnalysisDashboardEnabled), 6 dashboard components (DashboardSummary, MetricsCards, RiskIndicator, TopFindings, RecommendedNextSteps), 3 Recharts charts (FileLanguageChart, TechnologyChart, DependencyEcosystemChart), `features/analysis/pages/AnalysisDashboardPage.tsx` with all 4 states (loading/empty/error/data) reading analysisId from URL params
+- M10B Analysis Data Explorer: `lib/types.ts` (AnalysisFile, AnalysisDependency, AnalysisFilesParams, AnalysisDependenciesParams, AnalysisWarningsParams), `services/analysis.ts` (getAnalysisFiles, getAnalysisDependencies, updated getAnalysisWarnings with full params), `hooks/useAnalysis.ts` (useAnalysisFiles, useAnalysisDependencies, updated useAnalysisWarnings with params object + placeholderData), `lib/queryKeys.ts` (filter param type changed to object), `hooks/useDebounce.ts` (generic 300ms debounce), `features/analysis/components/explorer/` (DataTable with expandable rows, PaginationBar), `features/analysis/components/` (FilesTab, TechnologiesTab, DependenciesTab, WarningsTab, MetricsTab), `features/analysis/pages/AnalysisExplorerPage.tsx` (tabbed layout with ?tab= URL persistence, breadcrumb metadata, refresh button), route `/projects/:projectId/analyses/:analysisId/explorer`
+- M11 AI Workspace Frontend: `lib/types.ts` (AIResponse type), `services/ai.ts` (6 POST service functions: generateSummary, generateArchitecture, generateTechnicalDebt, generateModernization, generateFileExplanation, generateModuleExplanation), `hooks/useAI.ts` (6 mutation hooks with retry 1 + sonner toasts), `features/ai/` (AIWorkspacePage with 2-column card grid, common components: AIResponseCard, GenerateButton, CopyButton, MarkdownViewer, LoadingSkeleton, ErrorCard, PromptHeader, SectionCard; section components: SummarySection, ArchitectureSection, TechnicalDebtSection, ModernizationSection, FileExplanationSection with file picker dialog, ModuleExplanationSection with path input), route `/projects/:projectId/analyses/:analysisId/ai`
 
 ---
 
 # In Progress
 
-Milestone 10B — Analysis Detailed Report
+Milestone 11 — Reports & Documentation Frontend (documentation updates in progress)
 
 ---
 
@@ -100,9 +102,9 @@ None.
 
 # Next Tasks
 
-1. M10B Detailed Breakdown Pages (file-level insights, dependency deep-dive, warning details, technology stack explorer)
-2. M10C AI Insights Integration
-3. M11 Documentation & Reports Frontend
+1. Documentation & Reports Frontend
+2. Modernization Frontend
+3. Testing & QA
 
 ---
 
@@ -333,32 +335,40 @@ Status: Complete
 
 ## Milestone 10 — Detailed Report & AI Insights
 
-Status: In Progress
+Status: Complete
 
-### M10B — Analysis Detailed Report (Current)
+### M10B — Analysis Detailed Report
 
-- [ ] File-level insights page
-- [ ] Dependency deep-dive page
-- [ ] Warning details page
-- [ ] Technology stack explorer page
+- [x] File-level insights page (FilesTab with DataTable)
+- [x] Dependency deep-dive page (DependenciesTab with DataTable)
+- [x] Warning details page (WarningsTab with DataTable)
+- [x] Technology stack explorer page (TechnologiesTab + MetricsTab)
+- [x] Tabbed AnalysisExplorerPage with `?tab=` URL persistence
+- [x] Pagination, search, sort, filter on files, dependencies, warnings
+- [x] useDebounce hook for search input
+- [x] DataTable generic component with expandable rows
 
-### M10C — AI Insights Integration (Planned)
+### M10C — AI Insights Integration (→ M11)
 
-- [ ] AI summary generation frontend
-- [ ] File/module explanation UI
-- [ ] Modernization recommendations UI
+- [x] AI summary generation frontend (SummarySection)
+- [x] File explanation UI (FileExplanationSection with file picker dialog)
+- [x] Module explanation UI (ModuleExplanationSection with path input)
+- [x] Modernization recommendations UI (ModernizationSection)
+- [x] Architecture analysis UI (ArchitectureSection)
+- [x] Technical debt assessment UI (TechnicalDebtSection)
 
 ---
 
 ## Milestone 11 — Reports & Documentation Frontend
 
-Status: Not Started
+Status: In Progress
 
 Tasks
 
 - [ ] Reports module (PDF/HTML export)
 - [ ] Documentation module (auto-generated docs)
 - [ ] Modernization module (migration plans)
+- [x] AI Workspace Frontend (moved from M10C)
 
 ---
 
@@ -418,12 +428,13 @@ frontend/
 │   ├── features/
 │   │   ├── projects/    (pages, components — CRUD + workspace)
 │   │   ├── uploads/     (pages, components — dropzone, cards, list)
-│   │   └── analysis/    (pages, components/dashboard/ — overview dashboard)
-│   ├── hooks/           (useProjects, useUploads, useUploadAnalysisStatus, useAnalysis)
+│   │   ├── analysis/    (pages, components/dashboard/, components/explorer/, files/, technologies/, dependencies/, warnings/, metrics/ — dashboard + explorer)
+│   │   └── ai/          (pages, components/common/, components/summary/, architecture/, technicalDebt/, modernization/, fileExplanation/, moduleExplanation/)
+│   ├── hooks/           (useProjects, useUploads, useUploadAnalysisStatus, useAnalysis, useDebounce, useAI)
 │   ├── layouts/         (RootLayout, Sidebar, Header)
 │   ├── lib/             (types, utils — queryKeys, types, formatters)
 │   ├── routes/          (React Router configuration)
-│   ├── services/        (projects, uploads, analysis API clients)
+│   ├── services/        (projects, uploads, analysis, ai API clients)
 │   ├── stores/          (state management)
 │   └── styles/
 ├── index.html
@@ -1406,12 +1417,12 @@ Architecture Decisions
 
 # Definition of Current State
 
-Milestone 1 (Project Foundation) is **complete** including frontend initialization. Milestone 2 (Projects Module), Milestone 3 (Uploads Module), Milestone 4 (Static Analysis), Milestone 5 (Analysis Modules), and Milestone 6 (AI Module) are **complete**. Milestone 7 (Dashboard Frontend) is **complete** with M7C (Projects Frontend) and M7D (Project Workspace) implemented. Milestone 8 (Upload & Analysis Frontend) is **complete** with M8A (Upload Management) and M8B (Upload Processing) implemented. Milestone 9 (Analysis Overview Dashboard) is **complete** with M10A full dashboard implemented. Backend: 537 tests passing, zero failures.
+Milestone 1 (Project Foundation) is **complete** including frontend initialization. Milestone 2 (Projects Module), Milestone 3 (Uploads Module), Milestone 4 (Static Analysis), Milestone 5 (Analysis Modules), and Milestone 6 (AI Module) are **complete**. Milestone 7 (Dashboard Frontend) is **complete** with M7C (Projects Frontend) and M7D (Project Workspace) implemented. Milestone 8 (Upload & Analysis Frontend) is **complete** with M8A (Upload Management) and M8B (Upload Processing) implemented. Milestone 9 (Analysis Overview Dashboard) is **complete** with M10A full dashboard implemented. Milestone 10 (Detailed Report & AI Insights) is **complete** with M10B Analysis Data Explorer and M10C AI Insights (moved to M11). Milestone 11 (AI Workspace Frontend) is **in progress** with AI Workspace implementation complete. Backend: 537 tests passing, zero failures.
 
-The frontend is a React 19 + TypeScript + Vite + TailwindCSS application with React Router 7 for routing and TanStack Query for data fetching. It implements full CRUD project management, multi-file upload with drag-and-drop, real-time upload processing status (5s polling with auto-stop), an analysis overview dashboard with summary metrics, risk indicators, Recharts visualisations (file-language distribution, technology adoption, dependency ecosystem), and four-state UI handling (loading, empty, error, data) across all pages. Routes include `/projects`, `/projects/:projectId`, `/projects/:projectId/uploads`, and `/projects/:projectId/analysis/:analysisId/dashboard`.
+The frontend is a React 19 + TypeScript + Vite + TailwindCSS application with React Router 7 for routing and TanStack Query for data fetching. It implements full CRUD project management, multi-file upload with drag-and-drop, real-time upload processing status (5s polling with auto-stop), an analysis overview dashboard with summary metrics, risk indicators, Recharts visualisations (file-language distribution, technology adoption, dependency ecosystem), an analysis data explorer with tabbed browsing of files/technologies/dependencies/warnings/metrics, and an AI workspace with on-demand generation of summaries, architecture analysis, technical debt assessment, modernization recommendations, and file/module explanations. All pages implement four-state UI handling (loading, empty, error, data). Routes include `/projects`, `/projects/:projectId`, `/projects/:projectId/uploads`, `/projects/:projectId/analysis/:analysisId/dashboard`, `/projects/:projectId/analysis/:analysisId/explorer`, and `/projects/:projectId/analysis/:analysisId/ai`.
 
 The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), Analysis module (15 endpoints — 6 POST + 9 GET) with Discovery Engine, Detector Framework (4 detectors), MetricsCollector, AnalysisPipeline, AnalysisWriter, API Integration, Retrieval API, and Dashboard Aggregation, and AI module with 6 on-demand generation endpoints. The AI module provides LLM-powered project summaries, file explanations, module explanations, architecture descriptions, technical debt analysis, and modernization recommendations through a provider-abstracted architecture (LiteLLM supporting OpenAI, Anthropic, Gemini, Ollama) with Jinja2 prompt templates and a typed ContextBuilder.
 
 The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with four Alembic migrations applied (5 base tables + 6 M4 analysis tables + 4 covering indexes). Service-level timing with configurable threshold logging is in place. Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 19 implemented endpoints.
 
-The next session should begin Milestone 10B (Analysis Detailed Report — file-level insights, dependency deep-dive, warning details, technology stack explorer).
+The next session should begin Milestone 11 (Reports & Documentation Frontend — PDF/HTML export, auto-generated docs, migration plans) or the Modernization Frontend.

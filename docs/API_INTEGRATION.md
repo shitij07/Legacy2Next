@@ -35,6 +35,26 @@
 | `GET` | `/analysis/{id}/technologies` | `getAnalysisTechnologies()` | `useAnalysisTechnologies()` | Get detected technologies |
 | `GET` | `/analysis/{id}/warnings` | `getAnalysisWarnings()` | `useAnalysisWarnings()` | Get analysis warnings |
 
+## Analysis Details
+
+| Method | Endpoint | Service Function | Hook | Description |
+|--------|----------|-----------------|------|-------------|
+| `GET` | `/analysis/{id}/files` | `getAnalysisFiles()` | `useAnalysisFiles()` | List files with pagination, search, sort, filters |
+| `GET` | `/analysis/{id}/dependencies` | `getAnalysisDependencies()` | `useAnalysisDependencies()` | List dependencies with pagination, search, sort, filters |
+
+## AI
+
+| Method | Endpoint | Service Function | Hook | Description |
+|--------|----------|-----------------|------|-------------|
+| `POST` | `/ai/analysis/{id}/summary` | `generateSummary()` | `useGenerateSummary()` | AI-generated project overview |
+| `POST` | `/ai/analysis/{id}/architecture` | `generateArchitecture()` | `useGenerateArchitecture()` | AI architecture analysis |
+| `POST` | `/ai/analysis/{id}/technical-debt` | `generateTechnicalDebt()` | `useGenerateTechnicalDebt()` | AI technical debt assessment |
+| `POST` | `/ai/analysis/{id}/modernization` | `generateModernization()` | `useGenerateModernization()` | AI modernization recommendations |
+| `POST` | `/ai/analysis/{id}/file/{fileId}/explain` | `generateFileExplanation()` | `useGenerateFileExplanation()` | AI file explanation |
+| `POST` | `/ai/analysis/{id}/module` | `generateModuleExplanation()` | `useGenerateModuleExplanation()` | AI module explanation |
+
+All AI endpoints return `{ analysis_id, feature, content, model }`.
+
 ---
 
 # Data Flow
@@ -56,11 +76,26 @@ ProjectsPage ──→ GET /projects ──→ Project list with pagination
                                             │
                                             └──→ navigate to dashboard
                                                       │
-                                                      └──→ AnalysisDashboardPage
-                                                               ├──→ GET /analysis/{id}/dashboard
-                                                               ├──→ GET /analysis/{id}/metrics
-                                                               ├──→ GET /analysis/{id}/technologies
-                                                               └──→ GET /analysis/{id}/warnings
+                                                      ├──→ AnalysisDashboardPage
+                                                      │      ├──→ GET /analysis/{id}/dashboard
+                                                      │      ├──→ GET /analysis/{id}/metrics
+                                                      │      ├──→ GET /analysis/{id}/technologies
+                                                      │      └──→ GET /analysis/{id}/warnings
+                                                      │
+                                                      ├──→ AnalysisExplorerPage
+                                                      │      ├──→ GET /analysis/{id}/files
+                                                      │      ├──→ GET /analysis/{id}/technologies
+                                                      │      ├──→ GET /analysis/{id}/dependencies
+                                                      │      ├──→ GET /analysis/{id}/warnings
+                                                      │      └──→ GET /analysis/{id}/metrics
+                                                      │
+                                                      └──→ AIWorkspacePage
+                                                             ├──→ POST /ai/analysis/{id}/summary
+                                                             ├──→ POST /ai/analysis/{id}/architecture
+                                                             ├──→ POST /ai/analysis/{id}/technical-debt
+                                                             ├──→ POST /ai/analysis/{id}/modernization
+                                                             ├──→ POST /ai/analysis/{id}/file/{fileId}/explain
+                                                             └──→ POST /ai/analysis/{id}/module
 ```
 
 ---
