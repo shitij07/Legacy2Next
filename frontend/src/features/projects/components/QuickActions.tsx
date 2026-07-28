@@ -27,7 +27,7 @@ export function QuickActions({ projectId }: QuickActionsProps) {
       label: 'View Reports',
       description: 'View analysis reports and insights',
       icon: FileText,
-      disabled: true,
+      onClick: () => navigate(`/projects/${projectId}/reports`),
     },
   ]
 

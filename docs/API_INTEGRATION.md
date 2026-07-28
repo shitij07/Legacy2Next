@@ -57,12 +57,12 @@ All AI endpoints return `{ analysis_id, feature, content, model }`.
 
 ## Reports
 
-| Method | Endpoint | Service Function | Description |
-|--------|----------|-----------------|-------------|
-| `POST` | `/reports` | `generate_report()` | Create & generate report (body: `{ project_id, analysis_id, format, title }`) |
-| `GET` | `/reports` | `list_reports()` | List reports (query: `project_id`, `analysis_id`, `status`, `format`, `page`, `size`) |
-| `GET` | `/reports/{id}` | `get_report()` | Get report details |
-| `DELETE` | `/reports/{id}` | `delete_report()` | Delete a report |
+| Method | Endpoint | Service Function | Hook | Description |
+|--------|----------|-----------------|------|-------------|
+| `POST` | `/reports` | `generateReport()` | `useGenerateReport()` | Create & generate report (body: `{ project_id, analysis_id, format, title }`) |
+| `GET` | `/reports` | `getReports()` | `useReports()` | List reports (query: `project_id`, `analysis_id`, `status`, `format`, `page`, `size`) |
+| `GET` | `/reports/{id}` | `getReport()` | `useReport()` | Get report details with content |
+| `DELETE` | `/reports/{id}` | `deleteReport()` | `useDeleteReport()` | Delete a report |
 
 ---
 

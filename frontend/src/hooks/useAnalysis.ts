@@ -8,6 +8,7 @@ import {
   getAnalysisSummary,
   getAnalysisFiles,
   getAnalysisDependencies,
+  getProjectAnalyses,
 } from '@/services/analysis'
 import type {
   AnalysisFilesParams,
@@ -80,5 +81,17 @@ export function useAnalysisDependencies(
     queryFn: () => getAnalysisDependencies(analysisId, params),
     enabled: !!analysisId,
     placeholderData: (prev) => prev,
+  })
+}
+
+export function useProjectAnalyses(
+  projectId: number,
+  page = 1,
+  size = 100,
+) {
+  return useQuery({
+    queryKey: ['projects', projectId, 'analyses', { page, size }] as const,
+    queryFn: () => getProjectAnalyses(projectId, page, size),
+    enabled: !!projectId,
   })
 }

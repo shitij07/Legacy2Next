@@ -16,6 +16,8 @@
 | `/projects/:projectId/analysis/:analysisId/dashboard` | `AnalysisDashboardPage` | Yes | Analysis overview dashboard with summary, metrics, charts, warnings |
 | `/projects/:projectId/analysis/:analysisId/explorer` | `AnalysisExplorerPage` | Yes | Browse analysis data: files, technologies, dependencies, warnings, metrics |
 | `/projects/:projectId/analysis/:analysisId/ai` | `AIWorkspacePage` | Yes | AI-powered insights: summary, architecture, technical debt, modernization, file/module explanations |
+| `/projects/:projectId/reports` | `ReportsListPage` | Yes | Paginated report list with filters, generate/delete |
+| `/projects/:projectId/reports/:reportId` | `ReportViewerPage` (lazy) | Yes | Full report viewer with Markdown/JSON rendering |
 
 ---
 
@@ -30,6 +32,8 @@
   └── /projects/:projectId/analysis/:analysisId/dashboard  # AnalysisDashboardPage
   └── /projects/:projectId/analysis/:analysisId/explorer   # AnalysisExplorerPage
   └── /projects/:projectId/analysis/:analysisId/ai         # AIWorkspacePage
+  └── /projects/:projectId/reports             # ReportsListPage
+  └── /projects/:projectId/reports/:reportId   # ReportViewerPage (lazy)
 ```
 
 ---

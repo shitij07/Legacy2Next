@@ -34,19 +34,19 @@ Last Updated: 2026-07-28
 
 # Current Goal
 
-Milestone 11 — Reports & Documentation Frontend (Backend Foundation Complete)
+Milestone 11 — Reports & Documentation Frontend (Reports UI Complete)
 
 ---
 
 # Current Task
 
-B12 Backend Reports Foundation Implementation
+F12 Reports UI Frontend Implementation
 
 ---
 
 # Current Focus
 
-B12 Backend Reports Foundation complete: Enhanced Report model with ReportFormat/ReportStatus enums, 4 CRUD endpoints (POST/GET/GET-by-id/DELETE), repository with pagination/sorting/filtering, ReportService with Markdown + JSON generation (collects analysis data + AI outputs), Alembic migration, 19 new tests. 586 total tests passing.
+F12 Reports UI Frontend complete: types, services (generateReport, getReports, getReport, deleteReport), hooks (useReports, useReport, useGenerateReport, useDeleteReport with optimistic removal), ReportsListPage (paginated table, format/status filters, generate/delete dialogs, loading/empty/error states), ReportViewerPage (lazy-loaded, Markdown/JSON rendering, copy/download/delete actions), integrated into project routes and QuickActions. Zero TS/ESLint errors, production build passes.
 
 ---
 
@@ -86,12 +86,13 @@ B12 Backend Reports Foundation complete: Enhanced Report model with ReportFormat
 - M10B Analysis Data Explorer: `lib/types.ts` (AnalysisFile, AnalysisDependency, AnalysisFilesParams, AnalysisDependenciesParams, AnalysisWarningsParams), `services/analysis.ts` (getAnalysisFiles, getAnalysisDependencies, updated getAnalysisWarnings with full params), `hooks/useAnalysis.ts` (useAnalysisFiles, useAnalysisDependencies, updated useAnalysisWarnings with params object + placeholderData), `lib/queryKeys.ts` (filter param type changed to object), `hooks/useDebounce.ts` (generic 300ms debounce), `features/analysis/components/explorer/` (DataTable with expandable rows, PaginationBar), `features/analysis/components/` (FilesTab, TechnologiesTab, DependenciesTab, WarningsTab, MetricsTab), `features/analysis/pages/AnalysisExplorerPage.tsx` (tabbed layout with ?tab= URL persistence, breadcrumb metadata, refresh button), route `/projects/:projectId/analyses/:analysisId/explorer`
 - M11 AI Workspace Frontend: `lib/types.ts` (AIResponse type), `services/ai.ts` (6 POST service functions: generateSummary, generateArchitecture, generateTechnicalDebt, generateModernization, generateFileExplanation, generateModuleExplanation), `hooks/useAI.ts` (6 mutation hooks with retry 1 + sonner toasts), `features/ai/` (AIWorkspacePage with 2-column card grid, common components: AIResponseCard, GenerateButton, CopyButton, MarkdownViewer, LoadingSkeleton, ErrorCard, PromptHeader, SectionCard; section components: SummarySection, ArchitectureSection, TechnicalDebtSection, ModernizationSection, FileExplanationSection with file picker dialog, ModuleExplanationSection with path input), route `/projects/:projectId/analyses/:analysisId/ai`
 - B12 Backend Reports Foundation: Enhanced Report model (ReportFormat/MARKDOWN+JSON, ReportStatus/GENERATING/READY/FAILED, analysis_id/user_id/title/format/status/content/file_path/updated_at fields, relationships to Project/Analysis/User), 4 CRUD API endpoints (POST/GET/GET-by-id/DELETE), repository with pagination/sorting/filtering, ReportService with Markdown + JSON report generation (collects analysis data + AI outputs), Alembic migration b2c3d4e5f6a7, 19 new tests (10 generation + 9 API), router registered in main.py
+- F12 Reports UI Frontend: Full Reports feature module — types (ReportFormat/ReportStatus enums, typed interfaces), services (generateReport, getReports, getReport, deleteReport), hooks (useReports with placeholderData, useReport, useGenerateReport with query invalidation, useDeleteReport with optimistic removal), list page with paginated table + format/status filters + generate/delete dialogs, viewer page with Markdown rendering (react-markdown + remark-gfm) and pretty-printed JSON with copy/download/delete actions, lazy-loaded viewer route, enabled View Reports quick action
 
 ---
 
 # In Progress
 
-Milestone 11 — Reports & Documentation Frontend (Backend complete, frontend pending)
+Milestone 11 — Reports & Documentation Frontend (Reports UI complete, docs/export modules pending)
 
 ---
 
@@ -367,7 +368,7 @@ Status: In Progress
 Tasks
 
 - [x] Backend Reports Foundation (B12 — Report model, CRUD API, Markdown/JSON generation, 4 endpoints, 19 tests)
-- [ ] Frontend Reports UI
+- [x] Frontend Reports UI (F12 — types, services, hooks, list page with filters/pagination, viewer with Markdown/JSON rendering, generate/delete dialogs, lazy-loaded route)
 - [ ] Reports module (PDF/HTML export)
 - [ ] Documentation module (auto-generated docs)
 - [ ] Modernization module (migration plans)

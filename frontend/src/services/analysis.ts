@@ -32,6 +32,16 @@ export async function getAnalysisSummary(analysisId: number): Promise<Analysis> 
   return client.get(`analysis/${analysisId}`).json()
 }
 
+export async function getProjectAnalyses(
+  projectId: number,
+  page = 1,
+  size = 100,
+): Promise<PaginatedResponse<AnalysisListItem>> {
+  return client
+    .get(`analysis/project/${projectId}`, { searchParams: { page, size } })
+    .json()
+}
+
 export async function getAnalysisDashboard(analysisId: number): Promise<DashboardResponse> {
   return client.get(`analysis/${analysisId}/dashboard`).json()
 }

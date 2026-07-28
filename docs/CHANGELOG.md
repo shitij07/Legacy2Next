@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-07-28 — F12 Reports UI Frontend
+
+### Added
+- `frontend/src/features/reports/` — Full Reports feature module:
+  - `types/index.ts` — ReportFormat, ReportStatus enums, ReportSummary, ReportResponse, ReportListResponse, ReportCreatePayload, ReportListParams interfaces
+  - `api/index.ts` — generateReport(), getReports(), getReport(), deleteReport() with strong typing
+  - `hooks/index.ts` — useReports (with placeholderData), useReport, useGenerateReport (with query invalidation), useDeleteReport (with optimistic removal)
+  - `components/common/ReportStatusBadge.tsx` — Badge for GENERATING/READY/FAILED states
+  - `components/common/ReportFormatBadge.tsx` — Badge for Markdown/JSON formats
+  - `components/list/ReportsHeader.tsx` — Page header with Generate Report button
+  - `components/list/ReportFilters.tsx` — Filter selects for format and status
+  - `components/list/ReportTable.tsx` — Accessible table with title, format, status, created date, actions (view/delete)
+  - `components/dialogs/GenerateReportDialog.tsx` — Modal with title input, analysis dropdown (fetched live), format select
+  - `components/dialogs/DeleteReportDialog.tsx` — Confirmation dialog for delete
+  - `components/viewer/MarkdownReport.tsx` — Renders report content via MarkdownRenderer (react-markdown + remark-gfm)
+  - `components/viewer/JsonReport.tsx` — Pretty-prints JSON with syntax formatting and copy button
+  - `components/viewer/ReportActions.tsx` — Back, Copy (clipboard), Download (blob), Delete buttons
+  - `pages/ReportsListPage.tsx` — Paginated table with filters, empty/loading/error states, generate/delete dialogs
+  - `pages/ReportViewerPage.tsx` — Full report viewer with lazy loading, format-aware rendering, action buttons
+- `frontend/src/routes/projects.routes.tsx` — Added `/projects/:projectId/reports` and `/projects/:projectId/reports/:reportId` (viewer lazy-loaded)
+- `frontend/src/features/projects/components/QuickActions.tsx` — Enabled "View Reports" quick action (was disabled)
+
+### Changed
+- `frontend/src/services/analysis.ts` — Added getProjectAnalyses() service function
+- `frontend/src/hooks/useAnalysis.ts` — Added useProjectAnalyses() hook
+- `docs/CHANGELOG.md`, `docs/Legacy2Next_PROJECT_STATE.md`, `docs/ROUTES.md`, `docs/API_INTEGRATION.md` — Updated for F12
+
 ## 2026-07-28 — B12 Backend Reports Foundation
 
 ### Added
