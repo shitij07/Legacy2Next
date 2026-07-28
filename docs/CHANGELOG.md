@@ -1,5 +1,47 @@
 # Changelog
 
+## 2026-07-28 — B13+F13 Analysis Comparison
+
+### Added
+- `backend/app/models/comparison.py` — Comparison SQLAlchemy model (project_id, analysis_a_id, analysis_b_id, summary, comparison_data, created_at) with relationships to Project and Analysis
+- `backend/alembic/versions/c3d4e5f6a7b8_add_comparison_model.py` — Migration creates `comparisons` table with 2 FKs, indexes
+- `backend/app/modules/comparison/` — Full Comparison module:
+  - `schemas.py` — ComparisonCreate, ComparisonData (technologies, dependencies, files, warnings, metrics), MetricDiff, TechnologyComparison, DependencyComparison, FileComparison, WarningComparison, MetricsComparison, ComparisonResponse, ComparisonSummary, ComparisonListResponse
+  - `repository.py` — create_comparison, get_comparison, delete_comparison, list_comparisons (paginated by project_id)
+  - `service.py` — Comparison engine with _compare_technologies, _compare_dependencies, _compare_files, _compare_warnings, _compare_metrics; generates structured ComparisonData with added/removed/common/modified items; deterministic AI-like summary generation
+  - `routes.py` — 4 endpoints: POST /comparison (201), GET /comparison/{id}, GET /comparison/project/{project_id} (paginated), DELETE /comparison/{id} (204)
+- `backend/tests/test_comparison/` — 36 tests (27 generation + 9 API): technology/dependency/file/warning/metric comparison, summary generation, CRUD, auth, ownership, validation
+- `frontend/src/features/comparison/` — Full Comparison feature module:
+  - `types/index.ts` — MetricDiff, MetricsComparison, TechnologyComparison, DependencyComparison, FileComparison, WarningComparison, ComparisonData, ComparisonResponse, ComparisonSummary, ComparisonListResponse, ComparisonCreatePayload, ComparisonListParams
+  - `api/index.ts` — compareAnalyses(), getComparison(), getComparisonHistory(), deleteComparison()
+  - `hooks/index.ts` — useComparison, useComparisonHistory (with placeholderData), useCreateComparison (with query invalidation), useDeleteComparison (with optimistic removal)
+  - `components/ComparisonSelectors.tsx` — Analysis A/B pickers with Compare button
+  - `components/ComparisonDashboard.tsx` — Full dashboard with Metrics, Technologies, Dependencies, Files, Warnings sections using DiffCard and DiffTable
+  - `components/DiffCard.tsx` — Reusable stat card with added/removed/changed variants
+  - `components/DiffTable.tsx` — Reusable comparison table
+  - `components/ComparisonHistory.tsx` — Paginated history table with view/delete, ConfirmDialog
+  - `pages/ComparisonPage.tsx` — Main page with selectors, dashboard, and history
+  - `pages/ComparisonDetailPage.tsx` — Lazy-loaded detail page with full dashboard view
+- `frontend/src/routes/projects.routes.tsx` — Added `/projects/:projectId/comparison` and `/projects/:projectId/comparison/:comparisonId` (lazy-loaded)
+- `frontend/src/features/projects/components/QuickActions.tsx` — Added "Compare Analyses" action
+
+### Backend routes added
+- `POST /comparison` — Create comparison (201)
+- `GET /comparison/{comparison_id}` — Retrieve comparison
+- `GET /comparison/project/{project_id}` — Paginated history
+- `DELETE /comparison/{comparison_id}` — Delete comparison (204)
+
+### Frontend routes added
+- `/projects/:projectId/comparison` — Comparison page (selectors + dashboard + history)
+- `/projects/:projectId/comparison/:comparisonId` — Lazy-loaded comparison detail
+
+### Database changes
+- New `comparisons` table: id, project_id (FK), analysis_a_id (FK), analysis_b_id (FK), summary (Text), comparison_data (Text/JSON), created_at
+
+### Tests
+- 36 new backend tests (27 generation + 9 API)
+- Total: 622 tests passing
+
 ## 2026-07-28 — F12 Reports UI Frontend
 
 ### Added

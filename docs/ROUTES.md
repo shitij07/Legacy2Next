@@ -18,6 +18,8 @@
 | `/projects/:projectId/analysis/:analysisId/ai` | `AIWorkspacePage` | Yes | AI-powered insights: summary, architecture, technical debt, modernization, file/module explanations |
 | `/projects/:projectId/reports` | `ReportsListPage` | Yes | Paginated report list with filters, generate/delete |
 | `/projects/:projectId/reports/:reportId` | `ReportViewerPage` (lazy) | Yes | Full report viewer with Markdown/JSON rendering |
+| `/projects/:projectId/comparison` | `ComparisonPage` | Yes | Compare two analyses with selectors, dashboard, and history |
+| `/projects/:projectId/comparison/:comparisonId` | `ComparisonDetailPage` (lazy) | Yes | Full comparison detail with all diff sections |
 
 ---
 
@@ -34,6 +36,8 @@
   └── /projects/:projectId/analysis/:analysisId/ai         # AIWorkspacePage
   └── /projects/:projectId/reports             # ReportsListPage
   └── /projects/:projectId/reports/:reportId   # ReportViewerPage (lazy)
+  └── /projects/:projectId/comparison          # ComparisonPage
+  └── /projects/:projectId/comparison/:comparisonId  # ComparisonDetailPage (lazy)
 ```
 
 ---

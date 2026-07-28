@@ -18,7 +18,7 @@
 
 Project Name: Legacy2Next
 
-Version: 0.7.0
+Version: 0.8.0
 
 Current Phase: Development
 
@@ -28,25 +28,25 @@ Overall Progress: 80%
 
 Status: In Progress
 
-Last Updated: 2026-07-28
+Last Updated: 2026-07-28 (later)
 
 ---
 
 # Current Goal
 
-Milestone 11 — Reports & Documentation Frontend (Reports UI Complete)
+Milestone 13 — Analysis Comparison (Backend + Frontend Complete)
 
 ---
 
 # Current Task
 
-F12 Reports UI Frontend Implementation
+B13+F13 Analysis Comparison Implementation
 
 ---
 
 # Current Focus
 
-F12 Reports UI Frontend complete: types, services (generateReport, getReports, getReport, deleteReport), hooks (useReports, useReport, useGenerateReport, useDeleteReport with optimistic removal), ReportsListPage (paginated table, format/status filters, generate/delete dialogs, loading/empty/error states), ReportViewerPage (lazy-loaded, Markdown/JSON rendering, copy/download/delete actions), integrated into project routes and QuickActions. Zero TS/ESLint errors, production build passes.
+B13+F13 Analysis Comparison complete: Backend Comparison module (model, migration, schemas, repository, service with comparison engine for technologies/dependencies/files/warnings/metrics, 4 routes, 36 tests). Frontend Comparison module (types, services, hooks, ComparisonSelectors with analysis pickers, ComparisonDashboard with DiffCards/DiffTables, ComparisonHistory with pagination/delete, ComparisonPage and lazy-loaded ComparisonDetailPage, routes, QuickActions). Zero TS/ESLint errors, production build passes. 622 backend tests passing.
 
 ---
 
@@ -87,12 +87,13 @@ F12 Reports UI Frontend complete: types, services (generateReport, getReports, g
 - M11 AI Workspace Frontend: `lib/types.ts` (AIResponse type), `services/ai.ts` (6 POST service functions: generateSummary, generateArchitecture, generateTechnicalDebt, generateModernization, generateFileExplanation, generateModuleExplanation), `hooks/useAI.ts` (6 mutation hooks with retry 1 + sonner toasts), `features/ai/` (AIWorkspacePage with 2-column card grid, common components: AIResponseCard, GenerateButton, CopyButton, MarkdownViewer, LoadingSkeleton, ErrorCard, PromptHeader, SectionCard; section components: SummarySection, ArchitectureSection, TechnicalDebtSection, ModernizationSection, FileExplanationSection with file picker dialog, ModuleExplanationSection with path input), route `/projects/:projectId/analyses/:analysisId/ai`
 - B12 Backend Reports Foundation: Enhanced Report model (ReportFormat/MARKDOWN+JSON, ReportStatus/GENERATING/READY/FAILED, analysis_id/user_id/title/format/status/content/file_path/updated_at fields, relationships to Project/Analysis/User), 4 CRUD API endpoints (POST/GET/GET-by-id/DELETE), repository with pagination/sorting/filtering, ReportService with Markdown + JSON report generation (collects analysis data + AI outputs), Alembic migration b2c3d4e5f6a7, 19 new tests (10 generation + 9 API), router registered in main.py
 - F12 Reports UI Frontend: Full Reports feature module — types (ReportFormat/ReportStatus enums, typed interfaces), services (generateReport, getReports, getReport, deleteReport), hooks (useReports with placeholderData, useReport, useGenerateReport with query invalidation, useDeleteReport with optimistic removal), list page with paginated table + format/status filters + generate/delete dialogs, viewer page with Markdown rendering (react-markdown + remark-gfm) and pretty-printed JSON with copy/download/delete actions, lazy-loaded viewer route, enabled View Reports quick action
+- B13+F13 Analysis Comparison: Full Comparison module — backend Comparison SQLAlchemy model with Alembic migration, schemas (ComparisonData with 5 sub-comparisons: technologies/dependencies/files/warnings/metrics), repository with paginated CRUD, service with comparison engine generating structured diffs and deterministic summary, 4 REST endpoints (POST/GET/GET-project/DELETE), 36 tests (27 generation + 9 API). Frontend Comparison feature module — types (strongly-typed interfaces matching backend), services (4 functions), hooks (useComparison, useComparisonHistory with placeholderData, useCreateComparison with query invalidation, useDeleteComparison with optimistic removal), components (ComparisonSelectors with analysis A/B pickers, ComparisonDashboard with DiffCards/DiffTables, ComparisonHistory with pagination/delete), pages (ComparisonPage with full UI, lazy-loaded ComparisonDetailPage), routes (`/projects/:projectId/comparison`, `/projects/:projectId/comparison/:comparisonId`), QuickActions updated. Zero TS/ESLint errors, production build passes. 622 backend tests passing.
 
 ---
 
 # In Progress
 
-Milestone 11 — Reports & Documentation Frontend (Reports UI complete, docs/export modules pending)
+Milestone 13 — Analysis Comparison (Backend + Frontend complete)
 
 ---
 
@@ -104,9 +105,9 @@ None.
 
 # Next Tasks
 
-1. Documentation & Reports Frontend
-2. Modernization Frontend
-3. Testing & QA
+1. Testing & QA
+2. PDF/HTML Export for Reports
+3. Modernization Frontend
 
 ---
 
@@ -363,16 +364,26 @@ Status: Complete
 
 ## Milestone 11 — Reports & Documentation Frontend
 
-Status: In Progress
+Status: Complete
 
 Tasks
 
 - [x] Backend Reports Foundation (B12 — Report model, CRUD API, Markdown/JSON generation, 4 endpoints, 19 tests)
 - [x] Frontend Reports UI (F12 — types, services, hooks, list page with filters/pagination, viewer with Markdown/JSON rendering, generate/delete dialogs, lazy-loaded route)
-- [ ] Reports module (PDF/HTML export)
-- [ ] Documentation module (auto-generated docs)
-- [ ] Modernization module (migration plans)
 - [x] AI Workspace Frontend (moved from M10C)
+
+---
+
+## Milestone 13 — Analysis Comparison
+
+Status: Complete
+
+Tasks
+
+- [x] Backend Comparison module (model, migration, schemas, repository, service, routes)
+- [x] Frontend Comparison module (types, services, hooks, components, pages, routes)
+- [x] 36 backend tests (27 generation + 9 API)
+- [x] Zero TS/ESLint errors, production build passes
 
 ---
 
@@ -405,12 +416,13 @@ backend/
 │   ├── core/          (config, database, security, exceptions, dependencies)
 │   ├── storage/       (base ABC, LocalStorageProvider)
 │   ├── models/        (User, Project, Upload, Analysis, Report)
-│   ├── modules/       (auth, projects, uploads, analysis, ai, documentation, modernization, reports)
+│   ├── modules/       (auth, projects, uploads, analysis, ai, comparison, documentation, modernization, reports)
 │   │   ├── auth/      (fully implemented)
 │   │   ├── projects/  (fully implemented)
 │   │   ├── uploads/   (fully implemented — routes, service, schemas, repository, quota)
 │   │   ├── analysis/  (fully implemented — discovery, detectors, metrics, pipeline, writer, API, retrieval, dashboard)
 │   │   ├── ai/        (fully implemented — routes, service, schemas, context_builder, prompt_loader, prompts/)
+│   │   ├── comparison/ (fully implemented — model, schemas, repository, service, routes, 36 tests)
 │   │   └── */         (scaffolded — routes, service, schemas, repository)
 │   ├── workers/       (placeholder)
 │   ├── integrations/  (ai/provider.py implemented — AIProvider ABC + LiteLLMProvider)
@@ -433,7 +445,8 @@ frontend/
 │   │   ├── projects/    (pages, components — CRUD + workspace)
 │   │   ├── uploads/     (pages, components — dropzone, cards, list)
 │   │   ├── analysis/    (pages, components/dashboard/, components/explorer/, files/, technologies/, dependencies/, warnings/, metrics/ — dashboard + explorer)
-│   │   └── ai/          (pages, components/common/, components/summary/, architecture/, technicalDebt/, modernization/, fileExplanation/, moduleExplanation/)
+│   │   ├── ai/          (pages, components/common/, components/summary/, architecture/, technicalDebt/, modernization/, fileExplanation/, moduleExplanation/)
+│   │   └── comparison/  (pages, components — selectors, dashboard, history, DiffCard, DiffTable)
 │   ├── hooks/           (useProjects, useUploads, useUploadAnalysisStatus, useAnalysis, useDebounce, useAI)
 │   ├── layouts/         (RootLayout, Sidebar, Header)
 │   ├── lib/             (types, utils — queryKeys, types, formatters)
@@ -1421,7 +1434,7 @@ Architecture Decisions
 
 # Definition of Current State
 
-Milestone 1 (Project Foundation) is **complete** including frontend initialization. Milestone 2 (Projects Module), Milestone 3 (Uploads Module), Milestone 4 (Static Analysis), Milestone 5 (Analysis Modules), and Milestone 6 (AI Module) are **complete**. Milestone 7 (Dashboard Frontend) is **complete** with M7C (Projects Frontend) and M7D (Project Workspace) implemented. Milestone 8 (Upload & Analysis Frontend) is **complete** with M8A (Upload Management) and M8B (Upload Processing) implemented. Milestone 9 (Analysis Overview Dashboard) is **complete** with M10A full dashboard implemented. Milestone 10 (Detailed Report & AI Insights) is **complete** with M10B Analysis Data Explorer and M10C AI Insights (moved to M11). Milestone 11 (Reports & Documentation Frontend) is **in progress** with B12 Backend Reports Foundation complete and AI Workspace Frontend complete. Backend: 586 tests passing, zero failures.
+Milestone 1 (Project Foundation) is **complete** including frontend initialization. Milestones 2-10 are **complete**. Milestone 11 (Reports & Documentation Frontend) is **complete** (B12 + F12 + AI Workspace). Milestone 13 (Analysis Comparison) is **complete** (B13 + F13). Backend: 622 tests passing (586 existing + 36 new), zero failures.
 
 The frontend is a React 19 + TypeScript + Vite + TailwindCSS application with React Router 7 for routing and TanStack Query for data fetching. It implements full CRUD project management, multi-file upload with drag-and-drop, real-time upload processing status (5s polling with auto-stop), an analysis overview dashboard with summary metrics, risk indicators, Recharts visualisations (file-language distribution, technology adoption, dependency ecosystem), an analysis data explorer with tabbed browsing of files/technologies/dependencies/warnings/metrics, and an AI workspace with on-demand generation of summaries, architecture analysis, technical debt assessment, modernization recommendations, and file/module explanations. All pages implement four-state UI handling (loading, empty, error, data). Routes include `/projects`, `/projects/:projectId`, `/projects/:projectId/uploads`, `/projects/:projectId/analysis/:analysisId/dashboard`, `/projects/:projectId/analysis/:analysisId/explorer`, and `/projects/:projectId/analysis/:analysisId/ai`.
 

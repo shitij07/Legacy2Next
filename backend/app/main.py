@@ -5,6 +5,7 @@ from app.core.config import settings
 from app.modules.ai.routes import router as ai_router
 from app.modules.analysis.routes import router as analysis_router
 from app.modules.auth.routes import router as auth_router
+from app.modules.comparison.routes import router as comparison_router
 from app.modules.projects.routes import router as projects_router
 from app.modules.reports.routes import router as reports_router
 from app.modules.uploads.routes import router as uploads_router
@@ -22,6 +23,7 @@ app.add_middleware(
 app.include_router(ai_router)
 app.include_router(analysis_router)
 app.include_router(auth_router)
+app.include_router(comparison_router)
 app.include_router(projects_router)
 app.include_router(reports_router)
 app.include_router(uploads_router)

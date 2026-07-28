@@ -115,6 +115,36 @@ ProjectsPage ──→ GET /projects ──→ Project list with pagination
 
 ---
 
+## Comparison
+
+### `POST /comparison` — Create comparison
+
+- **Body:** `{ project_id, analysis_a_id, analysis_b_id }`
+- **Response:** `ComparisonResponse` with `comparison_data` (technologies, dependencies, files, warnings, metrics diffs)
+- **Service:** `compareAnalyses()` → `features/comparison/api/index.ts`
+- **Hook:** `useCreateComparison(projectId)` → `features/comparison/hooks/index.ts`
+
+### `GET /comparison/{comparison_id}` — Get comparison
+
+- **Response:** `ComparisonResponse`
+- **Service:** `getComparison()` → `features/comparison/api/index.ts`
+- **Hook:** `useComparison(comparisonId)` → `features/comparison/hooks/index.ts`
+
+### `GET /comparison/project/{project_id}` — List comparison history
+
+- **Params:** `page`, `size`
+- **Response:** `ComparisonListResponse`
+- **Service:** `getComparisonHistory()` → `features/comparison/api/index.ts`
+- **Hook:** `useComparisonHistory(params)` → `features/comparison/hooks/index.ts`
+
+### `DELETE /comparison/{comparison_id}` — Delete comparison
+
+- **Response:** `204 No Content`
+- **Service:** `deleteComparison()` → `features/comparison/api/index.ts`
+- **Hook:** `useDeleteComparison(projectId, params)` → `features/comparison/hooks/index.ts`
+
+---
+
 # Authentication
 
 All endpoints require a Bearer JWT token sent via the `Authorization` header. The frontend stores the token in a Zustand store and attaches it via an Axios/`fetch` interceptor.

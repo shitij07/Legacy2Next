@@ -1,4 +1,4 @@
-import { Upload, BarChart3, FileText } from 'lucide-react'
+import { Upload, BarChart3, FileText, GitCompare } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -28,6 +28,12 @@ export function QuickActions({ projectId }: QuickActionsProps) {
       description: 'View analysis reports and insights',
       icon: FileText,
       onClick: () => navigate(`/projects/${projectId}/reports`),
+    },
+    {
+      label: 'Compare Analyses',
+      description: 'Compare two analyses side by side',
+      icon: GitCompare,
+      onClick: () => navigate(`/projects/${projectId}/comparison`),
     },
   ]
 
