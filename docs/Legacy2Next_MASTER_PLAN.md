@@ -1556,18 +1556,26 @@ The platform begins generating software intelligence.
 
 ---
 
-## Phase 5 — Dashboard
+## Phase 5 — Frontend
 
 Deliverables
 
-- Dashboard UI
-- Reports
-- Documentation Viewer
-- Analysis Pages
+- Projects Frontend (CRUD + Workspace)
+- Upload Frontend (Dropzone + Processing)
+- Analysis Dashboard (Overview)
+- Detailed Report Pages
+- AI Insights Integration
 
 Outcome
 
-Developers can explore generated insights.
+Developers can explore generated insights through a polished React UI.
+
+Status
+
+- M7 (Projects Frontend + Workspace) — **Complete**
+- M8 (Upload + Processing Frontend) — **Complete**
+- M9 (Analysis Overview Dashboard) — **Complete**
+- M10 (Detailed Report + AI Insights) — **In Progress**
 
 ---
 
@@ -1589,18 +1597,18 @@ A polished MVP ready for evaluation.
 
 # 28. Development Milestones
 
-| Milestone | Deliverable |
-|-----------|-------------|
-| M1 | Project Setup Complete |
-| M2 | Authentication Complete |
-| M3 | Project Upload Complete |
-| M4 | Static Analysis Complete |
-| M5 | AI Analysis Complete |
-| M6 | Documentation Engine Complete |
-| M7 | Dashboard Complete |
-| M8 | Report Export Complete |
-| M9 | Testing Complete |
-| M10 | Final Presentation Ready |
+| Milestone | Deliverable | Status |
+|-----------|-------------|--------|
+| M1 | Project Foundation (Backend + Frontend) | ✅ Complete |
+| M2 | Projects Module | ✅ Complete |
+| M3 | Uploads Module | ✅ Complete |
+| M4 | Static Analysis Engine | ✅ Complete |
+| M5 | Analysis Modules (Retrieval, Dashboard) | ✅ Complete |
+| M6 | AI Module | ✅ Complete |
+| M7 | Dashboard Frontend (Projects, Workspace) | ✅ Complete |
+| M8 | Upload & Analysis Frontend | ✅ Complete |
+| M9 | Analysis Overview Dashboard | ✅ Complete |
+| M10 | Detailed Report & AI Insights Frontend | 🔄 In Progress |
 
 ---
 

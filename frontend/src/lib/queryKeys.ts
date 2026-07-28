@@ -13,13 +13,13 @@ export const queryKeys = {
     detail: (id: number) => ['analysis', id] as const,
     byUpload: (uploadId: number) => ['analysis', 'upload', uploadId] as const,
     dashboard: (id: number) => ['analysis', id, 'dashboard'] as const,
-    files: (id: number, filters: Record<string, unknown>) =>
+    files: (id: number, filters: object) =>
       ['analysis', id, 'files', filters] as const,
     technologies: (id: number) => ['analysis', id, 'technologies'] as const,
-    dependencies: (id: number, filters: Record<string, unknown>) =>
+    dependencies: (id: number, filters: object) =>
       ['analysis', id, 'dependencies', filters] as const,
     metrics: (id: number) => ['analysis', id, 'metrics'] as const,
-    warnings: (id: number, filters: Record<string, unknown>) =>
+    warnings: (id: number, filters: object) =>
       ['analysis', id, 'warnings', filters] as const,
   },
   ai: {

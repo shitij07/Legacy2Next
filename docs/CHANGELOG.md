@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-07-28 — M10A Analysis Overview Dashboard + M7-M9 Frontend
+
+### Added
+- `frontend/` — New React 19 + TypeScript + Vite + TailwindCSS 4 application
+- `frontend/src/services/projects.ts` — Projects API client (getProjects, getProject, createProject, updateProject, deleteProject)
+- `frontend/src/services/upload.ts` — Uploads API client (getUploads, uploadFile multipart, deleteUpload, UPLOAD_CONSTRAINTS, formatFileSize)
+- `frontend/src/services/analysis.ts` — Analysis API client (getUploadAnalyses, getAnalysisSummary, getAnalysisDashboard, getAnalysisMetrics, getAnalysisTechnologies, getAnalysisWarnings)
+- `frontend/src/hooks/useProjects.ts` — React Query hooks (useProjects, useCreateProject, useDeleteProject with optimistic updates)
+- `frontend/src/hooks/useUploads.ts` — React Query hooks (useUploads, useUploadFile, useDeleteUpload with optimistic updates + toasts, 10s refetch)
+- `frontend/src/hooks/useUploadAnalysisStatus.ts` — Polling hook (5s interval, auto-stop on terminal status)
+- `frontend/src/hooks/useAnalysis.ts` — React Query hooks for dashboard (useAnalysisDashboard, useAnalysisMetrics, useAnalysisTechnologies, useAnalysisWarnings, useAnalysisDashboardEnabled)
+- `frontend/src/features/projects/` — Projects CRUD pages and components (ProjectCard, ProjectList, CreateProjectDialog, ProjectWorkspacePage, ProjectMetadata, ProjectStats, QuickActions, RecentActivity)
+- `frontend/src/features/uploads/` — Upload pages and components (UploadDropzone, UploadCard, UploadList, UploadsPage, 5 processing states)
+- `frontend/src/features/analysis/` — Analysis dashboard page and components (DashboardSummary, MetricsCards, RiskIndicator, TopFindings, RecommendedNextSteps, FileLanguageChart, TechnologyChart, DependencyEcosystemChart)
+- `frontend/src/lib/types.ts` — 14+ TypeScript dashboard types (DashboardResponse, GeneralSection, FilesSection, TechnologiesSection, DependenciesSection, WarningsSection, MetricsSection, RiskLevel, etc.)
+- `frontend/src/routes/index.tsx` — React Router 7 config-based routes (/projects, /projects/:projectId, /projects/:projectId/uploads, /projects/:projectId/analysis/:analysisId/dashboard)
+- `frontend/src/layouts/` — RootLayout with sidebar navigation and header
+- `frontend/src/lib/queryKeys.ts` — React Query key factory
+- `docs/ROUTES.md` — Frontend routes documentation
+- `docs/API_INTEGRATION.md` — Dashboard backend endpoints consumed
+
+### Changed
+- `docs/Legacy2Next_PROJECT_STATE.md` — Updated to v0.6.0, Session 21, all milestones updated, repo structure includes frontend
+- `docs/Legacy2Next_MASTER_PLAN.md` — Development milestones table updated with status column, Phase 5 updated to reflect frontend completion
+- `docs/ARCHITECTURE.md` — Version bumped to 0.6.0, current milestone updated to M10B
+- `frontend/src/features/projects/components/QuickActions.tsx` — Enabled Upload Codebase navigation
+
+### Architecture
+- Feature-based frontend folder structure (features/projects, features/uploads, features/analysis) mirrors backend module organization
+- TanStack Query for server state with optimistic updates on create/delete
+- Sonner for toast notifications on upload/delete success/error
+- All pages implement 4 UI states (loading skeleton, empty state with CTA, error state with retry, data state)
+- Upload processing uses polling (5s interval) that auto-stops on terminal status
+- Dashboard charts use Recharts (sector donut for files, bar for technologies, pie for dependencies)
+- Routes use React Router 7 layout routes with RootLayout wrapping all pages
+
 ## 2026-07-27 — M6B AI Module
 
 ### Added

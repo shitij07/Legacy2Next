@@ -6,7 +6,14 @@ import {
   getAnalysisTechnologies,
   getAnalysisWarnings,
   getAnalysisSummary,
+  getAnalysisFiles,
+  getAnalysisDependencies,
 } from '@/services/analysis'
+import type {
+  AnalysisFilesParams,
+  AnalysisDependenciesParams,
+  AnalysisWarningsParams,
+} from '@/lib/types'
 
 export function useAnalysisDashboard(analysisId: number) {
   return useQuery({
@@ -40,10 +47,38 @@ export function useAnalysisTechnologies(analysisId: number) {
   })
 }
 
-export function useAnalysisWarnings(analysisId: number, page = 1, size = 20) {
+export function useAnalysisWarnings(
+  analysisId: number,
+  params: AnalysisWarningsParams = {},
+) {
   return useQuery({
-    queryKey: queryKeys.analysis.warnings(analysisId, { page, size }),
-    queryFn: () => getAnalysisWarnings(analysisId, page, size),
+    queryKey: queryKeys.analysis.warnings(analysisId, params),
+    queryFn: () => getAnalysisWarnings(analysisId, params),
     enabled: !!analysisId,
+    placeholderData: (prev) => prev,
+  })
+}
+
+export function useAnalysisFiles(
+  analysisId: number,
+  params: AnalysisFilesParams = {},
+) {
+  return useQuery({
+    queryKey: queryKeys.analysis.files(analysisId, params),
+    queryFn: () => getAnalysisFiles(analysisId, params),
+    enabled: !!analysisId,
+    placeholderData: (prev) => prev,
+  })
+}
+
+export function useAnalysisDependencies(
+  analysisId: number,
+  params: AnalysisDependenciesParams = {},
+) {
+  return useQuery({
+    queryKey: queryKeys.analysis.dependencies(analysisId, params),
+    queryFn: () => getAnalysisDependencies(analysisId, params),
+    enabled: !!analysisId,
+    placeholderData: (prev) => prev,
   })
 }

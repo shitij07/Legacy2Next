@@ -172,3 +172,53 @@ export interface AnalysisWarning {
   message: string
   created_at: string
 }
+
+export interface AnalysisFile {
+  id: number
+  relative_path: string
+  file_name: string
+  extension: string | null
+  file_size: number
+  lines_of_code: number | null
+  language: string | null
+  is_directory: boolean
+}
+
+export interface AnalysisDependency {
+  id: number
+  name: string
+  version: string | null
+  type: string
+  source_files: string[]
+  ecosystem: string | null
+}
+
+export interface AnalysisFilesParams {
+  page?: number
+  size?: number
+  extension?: string
+  language?: string
+  is_directory?: boolean
+  search?: string
+  sort_by?: string
+  sort_dir?: string
+}
+
+export interface AnalysisDependenciesParams {
+  page?: number
+  size?: number
+  ecosystem?: string
+  type?: string
+  search?: string
+  sort_by?: string
+  sort_dir?: string
+}
+
+export interface AnalysisWarningsParams {
+  page?: number
+  size?: number
+  detector_name?: string
+  search?: string
+  sort_by?: string
+  sort_dir?: string
+}

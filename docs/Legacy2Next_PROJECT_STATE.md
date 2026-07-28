@@ -18,35 +18,35 @@
 
 Project Name: Legacy2Next
 
-Version: 0.5.0
+Version: 0.6.0
 
 Current Phase: Development
 
-Current Sprint: Sprint 5 - AI Module
+Current Sprint: Sprint 6 — Frontend
 
-Overall Progress: 65%
+Overall Progress: 80%
 
 Status: In Progress
 
-Last Updated: 2026-07-27
+Last Updated: 2026-07-28
 
 ---
 
 # Current Goal
 
-Milestone 6 — AI Module (complete).
+Milestone 10B — Analysis Detailed Report
 
 ---
 
 # Current Task
 
-- Frontend initialization (M7 Dashboard frontend)
+M10B Detailed Breakdown Pages Implementation
 
 ---
 
 # Current Focus
 
-M6 AI Module implemented: 6 POST endpoints, LiteLLM provider abstraction (OpenAI/Anthropic/Gemini/Ollama), Jinja2 prompt system, ContextBuilder, stateless AIService. 537 tests passing (465 existing + 72 new).
+M10A Analysis Overview Dashboard complete: 3 API hooks (useAnalysisDashboard, useAnalysisMetrics, useAnalysisTechnologies, useAnalysisWarnings), 6 dashboard components (DashboardSummary, MetricsCards, RiskIndicator, TopFindings, RecommendedNextSteps), 3 Recharts charts (FileLanguageChart, TechnologyChart, DependencyEcosystemChart), AnalysisDashboardPage with all 4 states (loading, empty, error, data).
 
 ---
 
@@ -78,12 +78,17 @@ M6 AI Module implemented: 6 POST endpoints, LiteLLM provider abstraction (OpenAI
 - M5.3B Dashboard Aggregation: `dashboard_service.py` (DashboardService with 6 section builders, ownership validation, derived value computation), `dashboard_schemas.py` (9 nested DTOs: DashboardResponse, GeneralSection, FilesSection, TechnologiesSection, DependenciesSection, WarningsSection, MetricsSection, plus supporting sub-DTOs), `repository.py` (9 new aggregation methods — GROUP BY, COUNT, ORDER BY LIMIT — returning raw tuples/ORM entities only), `routes.py` (GET /analysis/{analysis_id}/dashboard), `test_dashboard_api.py` (51 tests covering all sections, empty data, ownership, DTO mapping, determinism, no-writes, serialization), 465 total
 - M5.4B Performance & Optimisation: Alembic migration `a1b2c3d4e5f6` adds 4 covering indexes (analysis_files_language, analysis_files_is_directory, analysis_warnings_detector, dependencies_type), `app/core/config.py` (configurable pagination limits via `MAX_PAGE_SIZE_SUBRESOURCE`, `MAX_PAGE_SIZE_LIST`, `DEFAULT_PAGE_SIZE_SUBRESOURCE`, `DEFAULT_PAGE_SIZE_LIST`, `SLOW_SERVICE_THRESHOLD_MS`), `dashboard_service.py` `get_dashboard()` uses `time.perf_counter()` with WARNING threshold logging, `query_service.py` `get_analysis_summary()` uses `time.perf_counter()` with WARNING threshold logging, 465 total tests (unchanged)
 - M6 AI Module: 6 POST endpoints (summary, file_explanation, module_explanation, architecture, technical_debt, modernization); `app/integrations/ai/provider.py` — AIProvider ABC + LiteLLMProvider wrapping `litellm.completion()`; `app/modules/ai/` — AIService ABC + DefaultAIService, ContextBuilder with 6 typed dataclasses, PromptLoader (Jinja2 + FileSystemLoader + cache), 6 Jinja2 prompt templates; `app/core/config.py` — 7 AI settings (AI_ENABLED, AI_PROVIDER, AI_MODEL, AI_API_KEY, AI_TEMPERATURE, AI_MAX_TOKENS, AI_TIMEOUT_SECONDS); `app/core/dependencies.py` — get_ai_provider, get_ai_service factories; ownership validation via FK chain; 72 AI tests (provider 9, prompt_loader 10, context_builder 7, service 14, routes 21); 537 total tests passing, zero regressions
+- M7C Projects Frontend (M8A): React Pages & API Integration — `services/projects.ts` (API functions), `hooks/useProjects.ts` (useProjects, useCreateProject, useDeleteProject with optimistic updates), `features/projects/components/` (ProjectCard, ProjectList, CreateProjectDialog), `features/projects/pages/ProjectsPage.tsx` (full CRUD with loading/empty/error/data states + pagination), route `/projects`
+- M8B Project Workspace: `features/projects/pages/ProjectWorkspacePage.tsx` (project detail + metadata/stats/actions/activity), `features/projects/components/` (ProjectMetadata, ProjectStats, QuickActions, RecentActivity), route `/projects/:projectId`
+- M9A Upload Management: `services/upload.ts` (getUploads, uploadFile multipart, deleteUpload, UPLOAD_CONSTRAINTS, formatFileSize), `hooks/useUploads.ts` (useUploads, useUploadFile, useDeleteUpload with optimistic updates + toasts), `features/uploads/components/` (UploadDropzone, UploadCard, UploadList), `features/uploads/pages/UploadsPage.tsx`, root layout navigation updated with Upload link, route `/projects/:projectId/uploads`
+- M9B Upload Processing: `services/analysis.ts` (getUploadAnalyses, getAnalysisSummary), `hooks/useUploadAnalysisStatus.ts` (useUploadAnalysisStatuses with 5s polling, auto-stop on terminal status), `hooks/useUploads.ts` (refetchInterval: 10_000), `lib/types.ts` (AnalysisListItem), `hook/useProjects.ts` queryKeys extended; UploadCard updated with 5 processing states (uploaded/analysing/completed/completed_with_errors/failed), status badge, loading spinner, conditional navigation
+- M10A Analysis Overview Dashboard: `lib/types.ts` (14+ dashboard types: DashboardResponse, GeneralSection, FilesSection, TechnologiesSection, DependenciesSection, WarningsSection, MetricsSection, RiskLevel, etc.), `services/analysis.ts` (getAnalysisDashboard, getAnalysisMetrics, getAnalysisTechnologies, getAnalysisWarnings), `hooks/useAnalysis.ts` (5 hooks: useAnalysisDashboard, useAnalysisMetrics, useAnalysisTechnologies, useAnalysisWarnings, useAnalysisDashboardEnabled), 6 dashboard components (DashboardSummary, MetricsCards, RiskIndicator, TopFindings, RecommendedNextSteps), 3 Recharts charts (FileLanguageChart, TechnologyChart, DependencyEcosystemChart), `features/analysis/pages/AnalysisDashboardPage.tsx` with all 4 states (loading/empty/error/data) reading analysisId from URL params
 
 ---
 
 # In Progress
 
-Milestone 7 — Dashboard Frontend (pending)
+Milestone 10B — Analysis Detailed Report
 
 ---
 
@@ -95,7 +100,9 @@ None.
 
 # Next Tasks
 
-1. Frontend initialization (React + TypeScript + Vite + TailwindCSS) — M7 Dashboard frontend
+1. M10B Detailed Breakdown Pages (file-level insights, dependency deep-dive, warning details, technology stack explorer)
+2. M10C AI Insights Integration
+3. M11 Documentation & Reports Frontend
 
 ---
 
@@ -103,7 +110,7 @@ None.
 
 ## Milestone 1 — Project Foundation
 
-Status: In Progress (5/6 — Frontend pending)
+Status: Complete
 
 Tasks
 
@@ -113,6 +120,7 @@ Tasks
 - [x] PostgreSQL Setup
 - [x] Docker Setup
 - [x] Authentication
+- [x] Frontend Setup
 
 ---
 
@@ -268,11 +276,81 @@ Tasks
 
 ## Milestone 7 — Dashboard Frontend
 
-Status: Not Started
+Status: Complete
+
+### M7C — Projects Frontend
+
+- [x] `services/projects.ts` — getProjects, getProject, createProject, updateProject, deleteProject
+- [x] `hooks/useProjects.ts` — useProjects, useCreateProject (optimistic), useDeleteProject (optimistic), useUpdateProject
+- [x] `features/projects/components/` — ProjectCard, ProjectList, CreateProjectDialog
+- [x] `features/projects/pages/ProjectsPage.tsx` — CRUD with loading/empty/error/data + pagination
+- [x] Route: `/projects`
+
+### M7D — Project Workspace
+
+- [x] `features/projects/pages/ProjectWorkspacePage.tsx` — project detail container
+- [x] `features/projects/components/` — ProjectMetadata, ProjectStats, QuickActions, RecentActivity
+- [x] Route: `/projects/:projectId`
 
 ---
 
-## Milestone 8 — Report Export & Documentation
+## Milestone 8 — Upload & Analysis Frontend
+
+Status: Complete (M8A Complete, M8B Complete)
+
+### M8A — Upload Management (M9A equivalent)
+
+- [x] `services/upload.ts` — getUploads, uploadFile (multipart), deleteUpload, UPLOAD_CONSTRAINTS, formatFileSize
+- [x] `hooks/useUploads.ts` — useUploads, useUploadFile, useDeleteUpload (optimistic + toasts)
+- [x] `features/uploads/components/` — UploadDropzone, UploadCard, UploadList
+- [x] `features/uploads/pages/UploadsPage.tsx`
+- [x] Route: `/projects/:projectId/uploads`
+
+### M8B — Upload Processing (M9B equivalent)
+
+- [x] `services/analysis.ts` — getUploadAnalyses, getAnalysisSummary
+- [x] `hooks/useUploadAnalysisStatus.ts` — 5s polling, auto-stop on terminal status
+- [x] `hooks/useUploads.ts` — refetchInterval 10s
+- [x] UploadCard: 5 processing states (uploaded/analysing/completed/completed_with_errors/failed)
+- [x] `lib/types.ts` — AnalysisListItem
+
+---
+
+## Milestone 9 — Analysis Overview Dashboard
+
+Status: Complete
+
+### M10A — Analysis Overview Dashboard
+
+- [x] `lib/types.ts` — 14+ dashboard types (DashboardResponse, GeneralSection, FilesSection, TechnologiesSection, DependenciesSection, WarningsSection, MetricsSection, RiskLevel, etc.)
+- [x] `services/analysis.ts` — getAnalysisDashboard, getAnalysisMetrics, getAnalysisTechnologies, getAnalysisWarnings
+- [x] `hooks/useAnalysis.ts` — 5 hooks (useAnalysisDashboard, useAnalysisMetrics, useAnalysisTechnologies, useAnalysisWarnings, useAnalysisDashboardEnabled)
+- [x] `features/analysis/components/dashboard/` — DashboardSummary, MetricsCards, RiskIndicator, TopFindings, RecommendedNextSteps, FileLanguageChart, TechnologyChart, DependencyEcosystemChart
+- [x] `features/analysis/pages/AnalysisDashboardPage.tsx` — 4 states (loading/empty/error/data), analysisId from URL
+- [x] WaitForAnalysis guard before navigating to dashboard
+
+---
+
+## Milestone 10 — Detailed Report & AI Insights
+
+Status: In Progress
+
+### M10B — Analysis Detailed Report (Current)
+
+- [ ] File-level insights page
+- [ ] Dependency deep-dive page
+- [ ] Warning details page
+- [ ] Technology stack explorer page
+
+### M10C — AI Insights Integration (Planned)
+
+- [ ] AI summary generation frontend
+- [ ] File/module explanation UI
+- [ ] Modernization recommendations UI
+
+---
+
+## Milestone 11 — Reports & Documentation Frontend
 
 Status: Not Started
 
@@ -284,7 +362,7 @@ Tasks
 
 ---
 
-## Milestone 9 — Finalization
+## Milestone 12 — Finalization
 
 Status: Not Started
 
@@ -332,7 +410,27 @@ backend/
 
 docker-compose.yml     (orchestrates db + backend)
 
-frontend/              (not yet initialized)
+frontend/
+├── src/
+│   ├── App.tsx
+│   ├── components/
+│   ├── config/
+│   ├── features/
+│   │   ├── projects/    (pages, components — CRUD + workspace)
+│   │   ├── uploads/     (pages, components — dropzone, cards, list)
+│   │   └── analysis/    (pages, components/dashboard/ — overview dashboard)
+│   ├── hooks/           (useProjects, useUploads, useUploadAnalysisStatus, useAnalysis)
+│   ├── layouts/         (RootLayout, Sidebar, Header)
+│   ├── lib/             (types, utils — queryKeys, types, formatters)
+│   ├── routes/          (React Router configuration)
+│   ├── services/        (projects, uploads, analysis API clients)
+│   ├── stores/          (state management)
+│   └── styles/
+├── index.html
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── tailwind.config.js
 
 prompts/               (not yet populated)
 
@@ -351,10 +449,15 @@ Backend
 
 Frontend
 
-- React
+- React 19
 - TypeScript
 - Vite
-- TailwindCSS
+- TailwindCSS 4
+- React Router 7
+- TanStack Query (React Query)
+- Recharts
+- Sonner (toasts)
+- clsx
 
 Database
 
@@ -1239,12 +1342,76 @@ Architecture Decisions
 
 ---
 
+## Session 21 — 2026-07-28
+
+Completed
+
+- Initialized frontend with React 19 + TypeScript + Vite + TailwindCSS 4 + React Router 7 + TanStack Query + Recharts + Sonner + clsx
+- Created root layout with sidebar navigation (Projects, Uploads links)
+- Created routing structure with React Router 7 (config-based routes)
+- M8A — Projects Frontend: `services/projects.ts` (API functions), `hooks/useProjects.ts` (useProjects, useCreateProject, useDeleteProject with optimistic updates), `features/projects/components/` (ProjectCard, ProjectList, CreateProjectDialog), `features/projects/pages/ProjectsPage.tsx` (full CRUD with loading/empty/error/data states + pagination), route `/projects`
+- M8B — Project Workspace: `features/projects/pages/ProjectWorkspacePage.tsx` (project detail + metadata/stats/actions/activity), `features/projects/components/` (ProjectMetadata, ProjectStats, QuickActions, RecentActivity), route `/projects/:projectId`
+- M9A — Upload Management: `services/upload.ts` (getUploads, uploadFile multipart, deleteUpload, UPLOAD_CONSTRAINTS, formatFileSize), `hooks/useUploads.ts` (useUploads, useUploadFile, useDeleteUpload with optimistic updates + toasts), `features/uploads/components/` (UploadDropzone, UploadCard, UploadList), `features/uploads/pages/UploadsPage.tsx`, root layout navigation updated with Upload link, route `/projects/:projectId/uploads`
+- M9B — Upload Processing: `services/analysis.ts` (getUploadAnalyses, getAnalysisSummary), `hooks/useUploadAnalysisStatus.ts` (useUploadAnalysisStatuses with 5s polling, auto-stop on terminal status), `hooks/useUploads.ts` (refetchInterval: 10_000), `lib/types.ts` (AnalysisListItem), queryKeys extended; UploadCard updated with 5 processing states (uploaded/analysing/completed/completed_with_errors/failed), status badge, loading spinner, conditional navigation
+- M10A — Analysis Overview Dashboard: `lib/types.ts` (14+ dashboard types: DashboardResponse, GeneralSection, FilesSection, TechnologiesSection, DependenciesSection, WarningsSection, MetricsSection, RiskLevel, etc.), `services/analysis.ts` (getAnalysisDashboard, getAnalysisMetrics, getAnalysisTechnologies, getAnalysisWarnings), `hooks/useAnalysis.ts` (5 hooks: useAnalysisDashboard, useAnalysisMetrics, useAnalysisTechnologies, useAnalysisWarnings, useAnalysisDashboardEnabled), 6 dashboard components (DashboardSummary, MetricsCards, RiskIndicator, TopFindings, RecommendedNextSteps), 3 Recharts charts (FileLanguageChart, TechnologyChart, DependencyEcosystemChart), `features/analysis/pages/AnalysisDashboardPage.tsx` with all 4 states (loading/empty/error/data) reading analysisId from URL params
+- Updated QuickActions.tsx to enable Upload Codebase navigation
+- Updated docs: PROJECT_STATE.md (milestones, structure, version, current state), MASTER_PLAN.md (roadmap), CHANGELOG.md, created ROUTES.md, API_INTEGRATION.md, updated ARCHITECTURE.md
+
+Files Created
+
+- `frontend/` — Full project structure (package.json, tsconfig, vite.config, tailwind, index.html, public/)
+- `frontend/src/App.tsx` — Root app component
+- `frontend/src/main.tsx` — Entry point with QueryClientProvider + RouterProvider
+- `frontend/src/routes/index.tsx` — React Router 7 config-based routes (4 routes)
+- `frontend/src/layouts/` — RootLayout (Sidebar + Header + Outlet + Toaster)
+- `frontend/src/services/projects.ts` — Projects API client
+- `frontend/src/services/upload.ts` — Uploads API client
+- `frontend/src/services/analysis.ts` — Analysis API client
+- `frontend/src/hooks/useProjects.ts` — React Query hooks for projects
+- `frontend/src/hooks/useUploads.ts` — React Query hooks for uploads
+- `frontend/src/hooks/useUploadAnalysisStatus.ts` — Polling hook for analysis status
+- `frontend/src/hooks/useAnalysis.ts` — React Query hooks for dashboard data
+- `frontend/src/lib/types.ts` — Shared TypeScript types (dashboard, analysis, etc.)
+- `frontend/src/lib/queryKeys.ts` — React Query key factory
+- `frontend/src/lib/utils.ts` — Utility functions
+- `frontend/src/features/projects/` — Projects feature (pages, components)
+- `frontend/src/features/uploads/` — Uploads feature (pages, components)
+- `frontend/src/features/analysis/` — Analysis feature (pages, components/dashboard)
+- `frontend/src/components/` — Shared UI components
+- `frontend/src/config/` — App configuration
+- `frontend/src/stores/` — State management (Zustand auth store)
+- `frontend/src/styles/` — Global styles
+- `docs/ROUTES.md` — Frontend routes documentation
+- `docs/API_INTEGRATION.md` — Dashboard backend endpoints consumed
+
+Testing Performed
+
+- Frontend: `npm run build` succeeds (no TypeScript errors)
+- Backend: 537 tests unchanged (no backend modifications)
+
+Architecture Decisions
+
+- Feature-based frontend folder structure (features/projects, features/uploads, features/analysis) matches backend module organization
+- TanStack Query for server state with optimistic updates on create/delete operations
+- Sonner for toast notifications on upload/delete success/error
+- clsx for conditional CSS class merging
+- Routes use React Router 7 layout routes with RootLayout wrapping all pages
+- Analysis dashboard reads `analysisId` from URL params, uses WaitForAnalysis guard for status check
+- Dashboard charts use Recharts (sector donut for files, bar for technologies, pie for dependencies)
+- All pages implement 4 UI states (loading skeleton, empty state with CTA, error state with retry, data state)
+- Upload processing uses polling (5s interval) that auto-stops when status is terminal (completed/failed/completed_with_errors)
+- Uploads list also refreshes every 10s to catch new completed statuses
+
+---
+
 # Definition of Current State
 
-Milestone 4 (Static Analysis) is **complete** with all 9 submodules implemented and tested. Milestones 5.1 (Analysis Retrieval), 5.2 (Shared Query Infrastructure), 5.3 (Dashboard Aggregation), 5.4 (Performance & Optimisation), and 6 (AI Module) are also **complete**. Total: 537 tests, zero failures. Milestone 1 has 5 of 6 tasks complete (frontend setup remaining). Milestone 2 (Projects Module) is complete. Milestone 3 (Uploads Module) is complete.
+Milestone 1 (Project Foundation) is **complete** including frontend initialization. Milestone 2 (Projects Module), Milestone 3 (Uploads Module), Milestone 4 (Static Analysis), Milestone 5 (Analysis Modules), and Milestone 6 (AI Module) are **complete**. Milestone 7 (Dashboard Frontend) is **complete** with M7C (Projects Frontend) and M7D (Project Workspace) implemented. Milestone 8 (Upload & Analysis Frontend) is **complete** with M8A (Upload Management) and M8B (Upload Processing) implemented. Milestone 9 (Analysis Overview Dashboard) is **complete** with M10A full dashboard implemented. Backend: 537 tests passing, zero failures.
+
+The frontend is a React 19 + TypeScript + Vite + TailwindCSS application with React Router 7 for routing and TanStack Query for data fetching. It implements full CRUD project management, multi-file upload with drag-and-drop, real-time upload processing status (5s polling with auto-stop), an analysis overview dashboard with summary metrics, risk indicators, Recharts visualisations (file-language distribution, technology adoption, dependency ecosystem), and four-state UI handling (loading, empty, error, data) across all pages. Routes include `/projects`, `/projects/:projectId`, `/projects/:projectId/uploads`, and `/projects/:projectId/analysis/:analysisId/dashboard`.
 
 The backend has a complete authentication system (register, login, JWT), Projects CRUD (5 endpoints, ownership-scoped), Uploads module (4 endpoints, file storage, quota, hash dedup), Analysis module (15 endpoints — 6 POST + 9 GET) with Discovery Engine, Detector Framework (4 detectors), MetricsCollector, AnalysisPipeline, AnalysisWriter, API Integration, Retrieval API, and Dashboard Aggregation, and AI module with 6 on-demand generation endpoints. The AI module provides LLM-powered project summaries, file explanations, module explanations, architecture descriptions, technical debt analysis, and modernization recommendations through a provider-abstracted architecture (LiteLLM supporting OpenAI, Anthropic, Gemini, Ollama) with Jinja2 prompt templates and a typed ContextBuilder.
 
-The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with four Alembic migrations applied (5 base tables + 6 M4 analysis tables + 4 covering indexes). Service-level timing with configurable threshold logging is in place. Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 19 implemented endpoints (13 existing + 6 AI POST endpoints).
+The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with four Alembic migrations applied (5 base tables + 6 M4 analysis tables + 4 covering indexes). Service-level timing with configurable threshold logging is in place. Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 19 implemented endpoints.
 
-The next session should begin Milestone 7 (Dashboard Frontend — React + TypeScript + Vite + TailwindCSS initialization).
+The next session should begin Milestone 10B (Analysis Detailed Report — file-level insights, dependency deep-dive, warning details, technology stack explorer).

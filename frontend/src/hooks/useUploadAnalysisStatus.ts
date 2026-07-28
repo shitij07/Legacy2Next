@@ -39,7 +39,7 @@ export function useUploadAnalysisStatuses(uploadIds: number[]): Record<number, U
     queries: uploadIds.map((uploadId) => ({
       queryKey: queryKeys.analysis.byUpload(uploadId),
       queryFn: () => getUploadAnalyses(uploadId),
-      refetchInterval(query) {
+      refetchInterval(query: { state: { data: unknown } }) {
         const data = query.state.data as PaginatedResponse<AnalysisListItem> | undefined
         if (!data || data.items.length === 0) return 5000
         const state = deriveState(data.items)

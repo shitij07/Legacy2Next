@@ -2,7 +2,7 @@
 
 # Legacy2Next — Architecture
 
-> **Version:** 0.5.0
+> **Version:** 0.6.0
 >
 > **Status:** Implemented sections reflect the current repository. Planned sections describe upcoming milestones.
 >
@@ -16,9 +16,9 @@
 
 ## Project Overview
 
-Legacy2Next is a FastAPI backend for legacy software analysis and modernization. At v0.5.0 the backend has a complete authentication system, Projects CRUD, Uploads module, full Analysis pipeline (discovery, 4 detectors, metrics, writer, retrieval API, dashboard aggregation), and an AI module with 6 on-demand generation endpoints. The AI module provides LLM-powered project summaries, file explanations, module explanations, architecture descriptions, technical debt analysis, and modernization recommendations through a provider-abstracted architecture.
+Legacy2Next is a FastAPI backend + React frontend for legacy software analysis and modernization. At v0.6.0 the backend has a complete authentication system, Projects CRUD, Uploads module, full Analysis pipeline (discovery, 4 detectors, metrics, writer, retrieval API, dashboard aggregation), and an AI module with 6 on-demand generation endpoints. The frontend implements project management, file uploads with processing status, and an analysis overview dashboard with Recharts visualisations.
 
-**Phase:** Development (Milestone 6 — AI Module complete).
+**Phase:** Development (Milestone 10B — Detailed Report Frontend).
 
 **What exists today:**
 
@@ -40,7 +40,7 @@ Legacy2Next is a FastAPI backend for legacy software analysis and modernization.
 | Test scaffolding (pytest, TestClient, 8 test directories) | Scaffolded |
 | AI module (6 POST endpoints, provider abstraction, prompt system, context builder) | Implemented (M6) |
 | 3 remaining modules (documentation, modernization, reports) | Scaffolded — routes/services/schemas/repository stubs |
-| Frontend (React + TypeScript + Vite) | Not initialized |
+| Frontend (React 19 + TypeScript + Vite + TailwindCSS 4 + React Router 7 + TanStack Query) | Implemented (Projects, Uploads, Analysis Dashboard) |
 | Background workers, integrations (ai provider) | Placeholder directories (workers); integrations/ai/ implemented |
 
 ---
@@ -736,7 +736,53 @@ Concrete subclasses:
 
 ## Frontend
 
-A React + TypeScript + Vite + TailwindCSS application will be initialized in the `frontend/` directory. The frontend directory currently exists but is empty.
+The `frontend/` directory contains a React 19 + TypeScript + Vite + TailwindCSS 4 application with React Router 7 and TanStack Query.
+
+### Frontend Folder Structure
+
+```
+frontend/src/
+├── App.tsx                      # Root app component
+├── components/                  # Shared UI components
+├── config/                      # App configuration
+├── features/
+│   ├── projects/                # Project CRUD + workspace
+│   │   ├── pages/               # ProjectsPage, ProjectWorkspacePage
+│   │   └── components/          # ProjectCard, ProjectList, CreateProjectDialog, ProjectMetadata, ProjectStats, QuickActions, RecentActivity
+│   ├── uploads/                 # File upload management
+│   │   ├── pages/               # UploadsPage
+│   │   └── components/          # UploadDropzone, UploadCard, UploadList
+│   └── analysis/                # Analysis dashboard
+│       ├── pages/               # AnalysisDashboardPage
+│       └── components/
+│           └── dashboard/       # DashboardSummary, MetricsCards, RiskIndicator, TopFindings, RecommendedNextSteps, FileLanguageChart, TechnologyChart, DependencyEcosystemChart
+├── hooks/                       # React Query hooks (useProjects, useUploads, useUploadAnalysisStatus, useAnalysis)
+├── layouts/                     # RootLayout (Sidebar + Header + Outlet)
+├── lib/                         # Shared types, query keys, utilities
+├── routes/                      # React Router config (4 routes)
+├── services/                    # API clients (projects, uploads, analysis)
+├── stores/                      # Zustand auth store
+└── styles/                      # Global styles
+```
+
+### Frontend Architecture
+
+- **Feature-based folder structure:** `features/projects`, `features/uploads`, `features/analysis` — mirrors backend module organization
+- **Server state:** TanStack Query manages all API data with optimistic updates on create/delete operations
+- **Routing:** React Router 7 config-based routes with a RootLayout wrapper
+- **UI states:** Every page implements 4 states — loading (skeleton), empty (CTA), error (retry), data
+- **Toasts:** Sonner for upload/delete success/error notifications
+- **Charts:** Recharts for dashboard visualisations (donut, bar, pie)
+- **Polling:** Upload analysis status polls every 5s with auto-stop on terminal status; uploads list refreshes every 10s
+
+### Frontend Routes
+
+| Path | Page | Description |
+|------|------|-------------|
+| `/projects` | ProjectsPage | Project list with CRUD |
+| `/projects/:projectId` | ProjectWorkspacePage | Project detail |
+| `/projects/:projectId/uploads` | UploadsPage | File upload + processing |
+| `/projects/:projectId/analysis/:analysisId/dashboard` | AnalysisDashboardPage | Overview dashboard |
 
 ## Planned Modules
 
@@ -771,15 +817,16 @@ Uploads (M3), Analysis (M4/M5), and AI (M6) are now complete. Remaining modules:
 
 ## Architecture Evolution
 
-### Current Milestone — Milestone 6 (complete)
+### Current Milestone — Milestone 10B (Detailed Report Frontend)
 
 ```
-                                                                     ┌──────────────┐
-                                                                     │   Frontend   │
-                                                                     │  (not yet)   │
-                                                                     └──────────────┘
-                                                                            │
-                                                                            ▼
+                                                                      ┌──────────────────┐
+                                                                      │   Frontend       │
+                                                                      │  (React 19 + Vite│
+                                                                      │   + TailwindCSS) │
+                                                                      └──────────────────┘
+                                                                             │
+                                                                             ▼
  ┌──────────┐     ┌──────────────────────────────────────────────────────────┐
  │  Client   │────▶                    FastAPI Backend                       │
  │ (curl/   │     ├──────────┬──────────┬──────────┬──────────┬─────────────┤
@@ -808,11 +855,14 @@ Uploads (M3), Analysis (M4/M5), and AI (M6) are now complete. Remaining modules:
                └──────────────┘
 ```
 
-✅ = implemented; analysis ✅ = all submodules (discovery, 4 detectors, metrics, pipeline, writer, API, retrieval, dashboard) — 465 existing tests; AI ✅ = 6 endpoints, provider abstraction, prompt system, 72 tests; everything else is scaffolded.
+✅ = implemented; analysis ✅ = all submodules (discovery, 4 detectors, metrics, pipeline, writer, API, retrieval, dashboard) — 465 existing tests; AI ✅ = 6 endpoints, provider abstraction, prompt system, 72 tests; frontend ✅ = projects CRUD, uploads, processing, dashboard; everything else is scaffolded.
 
 ### Next Milestones
 
-- **M6 (AI Module):** ✅ 6 POST endpoints, LiteLLM provider abstraction (OpenAI/Anthropic/Gemini/Ollama), Jinja2 prompt system, ContextBuilder, 72 tests — 537 total passing
-- **M7 (Dashboard Frontend):** Initialize React + TypeScript + Vite + TailwindCSS frontend; implement analysis dashboard with query builder, metric charts, file explorer, AI insights display, user settings
-- **M8 (Report Export):** Implement reports module (PDF/HTML export of analysis results), documentation module (auto-generated docs from analysis data), modernization module (step-by-step migration plans)
-- **M9 (Finalization):** Testing, bug fixes, deployment configuration, remaining documentation
+- **M7 (Projects Frontend + Workspace):** ✅ ProjectsPage, ProjectWorkspacePage, CRUD, metadata, stats, quick actions
+- **M8 (Upload & Analysis Frontend):** ✅ UploadsPage with dropzone, UploadCard with 5 processing states, polling
+- **M9 (Analysis Overview Dashboard):** ✅ DashboardSummary, MetricsCards, RiskIndicator, TopFindings, Charts, 4-state UI
+- **M10B (Detailed Report Frontend):** 🔄 File-level insights, dependency deep-dive, warning details, technology stack explorer
+- **M10C (AI Insights Integration):** AI summary generation, file/module explanation, modernization recommendations UI
+- **M11 (Reports & Documentation Frontend):** Report export UI, documentation viewer, migration plans
+- **M12 (Finalization):** Testing, bug fixes, deployment configuration, remaining documentation
