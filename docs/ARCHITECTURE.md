@@ -2,7 +2,7 @@
 
 # Legacy2Next — Architecture
 
-> **Version:** 0.6.0
+> **Version:** 0.7.0
 >
 > **Status:** Implemented sections reflect the current repository. Planned sections describe upcoming milestones.
 >
@@ -16,9 +16,9 @@
 
 ## Project Overview
 
-Legacy2Next is a FastAPI backend + React frontend for legacy software analysis and modernization. At v0.6.0 the backend has a complete authentication system, Projects CRUD, Uploads module, full Analysis pipeline (discovery, 4 detectors, metrics, writer, retrieval API, dashboard aggregation), and an AI module with 6 on-demand generation endpoints. The frontend implements project management, file uploads with processing status, and an analysis overview dashboard with Recharts visualisations.
+Legacy2Next is a FastAPI backend + React frontend for legacy software analysis and modernization. At v0.7.0 the backend has a complete authentication system, Projects CRUD, Uploads module, full Analysis pipeline (discovery, 4 detectors, metrics, writer, retrieval API, dashboard aggregation), an AI module with 6 on-demand generation endpoints, and a Reports module with 4 CRUD endpoints and Markdown/JSON generation. The frontend implements project management, file uploads with processing status, an analysis overview dashboard with Recharts visualisations, an analysis data explorer, and an AI workspace.
 
-**Phase:** Development (Milestone 11 — AI Workspace Frontend).
+**Phase:** Development (Milestone 11 — Reports & Documentation Frontend).
 
 **What exists today:**
 
@@ -39,7 +39,8 @@ Legacy2Next is a FastAPI backend + React frontend for legacy software analysis a
 | pyproject.toml (PEP 621, uv-compatible) | Implemented |
 | Test scaffolding (pytest, TestClient, 8 test directories) | Scaffolded |
 | AI module (6 POST endpoints, provider abstraction, prompt system, context builder) | Implemented (M6) |
-| 3 remaining modules (documentation, modernization, reports) | Scaffolded — routes/services/schemas/repository stubs |
+| Reports module (4 CRUD endpoints, Markdown/JSON generation, AI integration) | Implemented (B12) |
+| 2 remaining modules (documentation, modernization) | Scaffolded — routes/services/schemas/repository stubs |
 | Frontend (React 19 + TypeScript + Vite + TailwindCSS 4 + React Router 7 + TanStack Query) | Implemented (Projects, Uploads, Analysis Dashboard, Analysis Explorer, AI Workspace) |
 | Background workers, integrations (ai provider) | Placeholder directories (workers); integrations/ai/ implemented |
 
@@ -79,7 +80,7 @@ backend/
 │   │   ├── ai/                          # Fully implemented (M6): routes, service (ABC + DefaultAIService), schemas, context_builder, prompt_loader, prompts/
 │   │   ├── documentation/               # Scaffolded (+ generators/ subdirectory stubs)
 │   │   ├── modernization/               # Scaffolded
-│   │   └── reports/                     # Scaffolded
+│   │   └── reports/                     # Implemented (4 CRUD endpoints, Markdown/JSON generation)
 │   ├── workers/                         # Placeholder (empty __init__.py)
 │   ├── integrations/
 │   │   ├── __init__.py
@@ -93,7 +94,10 @@ backend/
 │   ├── script.py.mako                   # Migration template
 │   └── versions/
 │       ├── b1a1677bc7ef_initial_migration.py  # Creates users, projects, analyses, reports
-│       └── e6da2e749540_create_uploads_table.py  # Creates uploads table (FK to projects, SHA-256, 5 indexes)
+│       ├── e6da2e749540_create_uploads_table.py  # Creates uploads table (FK to projects, SHA-256, 5 indexes)
+│       ├── 3f88aa8a120f_add_m4_analysis_models.py  # Creates analysis models (technologies, analysis_files, etc.)
+│       ├── a1b2c3d4e5f6_add_m54_covering_indexes.py  # Adds covering indexes for dashboard performance
+│       └── b2c3d4e5f6a7_add_report_model_fields.py  # Adds analysis_id, user_id, title, format, status, content, file_path, updated_at to reports
 ├── tests/
 │   ├── __init__.py
 │   ├── conftest.py                      # TestClient fixture
@@ -875,7 +879,7 @@ Uploads (M3), Analysis (M4/M5), and AI (M6) are now complete. Remaining modules:
                └──────────────┘
 ```
 
-✅ = implemented; analysis ✅ = all submodules (discovery, 4 detectors, metrics, pipeline, writer, API, retrieval, dashboard) — 465 existing tests; AI ✅ = 6 endpoints, provider abstraction, prompt system, 72 tests; frontend ✅ = projects CRUD, uploads, processing, dashboard, analysis explorer, AI workspace; everything else is scaffolded.
+✅ = implemented; analysis ✅ = all submodules (discovery, 4 detectors, metrics, pipeline, writer, API, retrieval, dashboard) — 465 existing tests; AI ✅ = 6 endpoints, provider abstraction, prompt system, 72 tests; reports ✅ = 4 CRUD endpoints, Markdown/JSON generation, AI integration, 19 tests; frontend ✅ = projects CRUD, uploads, processing, dashboard, analysis explorer, AI workspace; everything else is scaffolded.
 
 ### Next Milestones
 
@@ -884,5 +888,6 @@ Uploads (M3), Analysis (M4/M5), and AI (M6) are now complete. Remaining modules:
 - **M9 (Analysis Overview Dashboard):** ✅ DashboardSummary, MetricsCards, RiskIndicator, TopFindings, Charts, 4-state UI
 - **M10B (Detailed Report Frontend):** ✅ File-level insights, dependency deep-dive, warning details, technology stack explorer (AnalysisExplorerPage, FilesTab, TechnologiesTab, DependenciesTab, WarningsTab, MetricsTab)
 - **M11 (AI Workspace):** ✅ AI summary, architecture, technical debt, modernization, file/module explanation (AIWorkspacePage, AIResponseCard, 6 section components, 6 mutation hooks)
+- **B12 (Backend Reports):** ✅ Report model, 4 CRUD endpoints, Markdown/JSON generation, AI integration, 19 tests, migration
 - **M11 (Reports & Documentation Frontend):** Report export UI, documentation viewer, migration plans
 - **M12 (Finalization):** Testing, bug fixes, deployment configuration, remaining documentation

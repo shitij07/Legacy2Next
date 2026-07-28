@@ -55,6 +55,15 @@
 
 All AI endpoints return `{ analysis_id, feature, content, model }`.
 
+## Reports
+
+| Method | Endpoint | Service Function | Description |
+|--------|----------|-----------------|-------------|
+| `POST` | `/reports` | `generate_report()` | Create & generate report (body: `{ project_id, analysis_id, format, title }`) |
+| `GET` | `/reports` | `list_reports()` | List reports (query: `project_id`, `analysis_id`, `status`, `format`, `page`, `size`) |
+| `GET` | `/reports/{id}` | `get_report()` | Get report details |
+| `DELETE` | `/reports/{id}` | `delete_report()` | Delete a report |
+
 ---
 
 # Data Flow
@@ -96,6 +105,12 @@ ProjectsPage ──→ GET /projects ──→ Project list with pagination
                                                              ├──→ POST /ai/analysis/{id}/modernization
                                                              ├──→ POST /ai/analysis/{id}/file/{fileId}/explain
                                                              └──→ POST /ai/analysis/{id}/module
+
+                                               ReportsPage (future)
+                                                       ├──→ POST /reports
+                                                       ├──→ GET /reports?project_id=...
+                                                       ├──→ GET /reports/{id}
+                                                       └──→ DELETE /reports/{id}
 ```
 
 ---

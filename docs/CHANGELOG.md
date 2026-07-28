@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-07-28 — B12 Backend Reports Foundation
+
+### Added
+- `backend/app/models/report.py` — Enhanced Report model with ReportFormat (MARKDOWN, JSON) and ReportStatus (GENERATING, READY, FAILED) enums, new fields (analysis_id, user_id, title, format, status, content, file_path, updated_at), SQLAlchemy relationships to Project/Analysis/User
+- `backend/app/modules/reports/schemas.py` — ReportCreate, ReportResponse, ReportSummary, ReportListResponse, ReportFormat, ReportStatus
+- `backend/app/modules/reports/repository.py` — create_report, get_report, update_report, delete_report, list_reports with pagination/sorting/filtering by project_id/analysis_id/status/format
+- `backend/app/modules/reports/service.py` — generate_report (collects analysis data + AI outputs, generates Markdown/JSON), list_reports, get_report, delete_report with ownership validation
+- `backend/app/modules/reports/routes.py` — POST /reports (201), GET /reports (paginated), GET /reports/{id}, DELETE /reports/{id} (204)
+- `backend/alembic/versions/b2c3d4e5f6a7_add_report_model_fields.py` — Migration adding 8 columns, 3 FKs, 3 indexes to reports table
+- `backend/tests/test_reports/test_generation.py` — 10 tests for Markdown and JSON generation
+- `backend/tests/test_reports/test_routes.py` — 9 API tests (CRUD, auth, ownership, validation)
+- `backend/app/main.py` — Registered reports_router
+
+### Changed
+- `backend/app/modules/reports/__init__.py` — Module package initialized
+- `docs/CHANGELOG.md`, `docs/Legacy2Next_PROJECT_STATE.md`, `docs/ARCHITECTURE.md` — Updated for B12
+
 ## 2026-07-28 — M11 AI Workspace Frontend
 
 ### Added

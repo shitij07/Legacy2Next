@@ -34,19 +34,19 @@ Last Updated: 2026-07-28
 
 # Current Goal
 
-Milestone 11 — AI Workspace Frontend
+Milestone 11 — Reports & Documentation Frontend (Backend Foundation Complete)
 
 ---
 
 # Current Task
 
-M11 AI Workspace Frontend Implementation
+B12 Backend Reports Foundation Implementation
 
 ---
 
 # Current Focus
 
-M11 AI Workspace Frontend complete: 6 AI mutation hooks, AI Workspace page with 6 section components (Summary, Architecture, Technical Debt, Modernization, File Explanation, Module Explanation), shared AI components (AIResponseCard, MarkdownViewer, GenerateButton, CopyButton, etc.), route `/projects/:projectId/analyses/:analysisId/ai`. TypeScript, ESLint, and production build all passing.
+B12 Backend Reports Foundation complete: Enhanced Report model with ReportFormat/ReportStatus enums, 4 CRUD endpoints (POST/GET/GET-by-id/DELETE), repository with pagination/sorting/filtering, ReportService with Markdown + JSON generation (collects analysis data + AI outputs), Alembic migration, 19 new tests. 586 total tests passing.
 
 ---
 
@@ -85,12 +85,13 @@ M11 AI Workspace Frontend complete: 6 AI mutation hooks, AI Workspace page with 
 - M10A Analysis Overview Dashboard: `lib/types.ts` (14+ dashboard types: DashboardResponse, GeneralSection, FilesSection, TechnologiesSection, DependenciesSection, WarningsSection, MetricsSection, RiskLevel, etc.), `services/analysis.ts` (getAnalysisDashboard, getAnalysisMetrics, getAnalysisTechnologies, getAnalysisWarnings), `hooks/useAnalysis.ts` (5 hooks: useAnalysisDashboard, useAnalysisMetrics, useAnalysisTechnologies, useAnalysisWarnings, useAnalysisDashboardEnabled), 6 dashboard components (DashboardSummary, MetricsCards, RiskIndicator, TopFindings, RecommendedNextSteps), 3 Recharts charts (FileLanguageChart, TechnologyChart, DependencyEcosystemChart), `features/analysis/pages/AnalysisDashboardPage.tsx` with all 4 states (loading/empty/error/data) reading analysisId from URL params
 - M10B Analysis Data Explorer: `lib/types.ts` (AnalysisFile, AnalysisDependency, AnalysisFilesParams, AnalysisDependenciesParams, AnalysisWarningsParams), `services/analysis.ts` (getAnalysisFiles, getAnalysisDependencies, updated getAnalysisWarnings with full params), `hooks/useAnalysis.ts` (useAnalysisFiles, useAnalysisDependencies, updated useAnalysisWarnings with params object + placeholderData), `lib/queryKeys.ts` (filter param type changed to object), `hooks/useDebounce.ts` (generic 300ms debounce), `features/analysis/components/explorer/` (DataTable with expandable rows, PaginationBar), `features/analysis/components/` (FilesTab, TechnologiesTab, DependenciesTab, WarningsTab, MetricsTab), `features/analysis/pages/AnalysisExplorerPage.tsx` (tabbed layout with ?tab= URL persistence, breadcrumb metadata, refresh button), route `/projects/:projectId/analyses/:analysisId/explorer`
 - M11 AI Workspace Frontend: `lib/types.ts` (AIResponse type), `services/ai.ts` (6 POST service functions: generateSummary, generateArchitecture, generateTechnicalDebt, generateModernization, generateFileExplanation, generateModuleExplanation), `hooks/useAI.ts` (6 mutation hooks with retry 1 + sonner toasts), `features/ai/` (AIWorkspacePage with 2-column card grid, common components: AIResponseCard, GenerateButton, CopyButton, MarkdownViewer, LoadingSkeleton, ErrorCard, PromptHeader, SectionCard; section components: SummarySection, ArchitectureSection, TechnicalDebtSection, ModernizationSection, FileExplanationSection with file picker dialog, ModuleExplanationSection with path input), route `/projects/:projectId/analyses/:analysisId/ai`
+- B12 Backend Reports Foundation: Enhanced Report model (ReportFormat/MARKDOWN+JSON, ReportStatus/GENERATING/READY/FAILED, analysis_id/user_id/title/format/status/content/file_path/updated_at fields, relationships to Project/Analysis/User), 4 CRUD API endpoints (POST/GET/GET-by-id/DELETE), repository with pagination/sorting/filtering, ReportService with Markdown + JSON report generation (collects analysis data + AI outputs), Alembic migration b2c3d4e5f6a7, 19 new tests (10 generation + 9 API), router registered in main.py
 
 ---
 
 # In Progress
 
-Milestone 11 — Reports & Documentation Frontend (documentation updates in progress)
+Milestone 11 — Reports & Documentation Frontend (Backend complete, frontend pending)
 
 ---
 
@@ -365,6 +366,8 @@ Status: In Progress
 
 Tasks
 
+- [x] Backend Reports Foundation (B12 — Report model, CRUD API, Markdown/JSON generation, 4 endpoints, 19 tests)
+- [ ] Frontend Reports UI
 - [ ] Reports module (PDF/HTML export)
 - [ ] Documentation module (auto-generated docs)
 - [ ] Modernization module (migration plans)
@@ -1417,7 +1420,7 @@ Architecture Decisions
 
 # Definition of Current State
 
-Milestone 1 (Project Foundation) is **complete** including frontend initialization. Milestone 2 (Projects Module), Milestone 3 (Uploads Module), Milestone 4 (Static Analysis), Milestone 5 (Analysis Modules), and Milestone 6 (AI Module) are **complete**. Milestone 7 (Dashboard Frontend) is **complete** with M7C (Projects Frontend) and M7D (Project Workspace) implemented. Milestone 8 (Upload & Analysis Frontend) is **complete** with M8A (Upload Management) and M8B (Upload Processing) implemented. Milestone 9 (Analysis Overview Dashboard) is **complete** with M10A full dashboard implemented. Milestone 10 (Detailed Report & AI Insights) is **complete** with M10B Analysis Data Explorer and M10C AI Insights (moved to M11). Milestone 11 (AI Workspace Frontend) is **in progress** with AI Workspace implementation complete. Backend: 537 tests passing, zero failures.
+Milestone 1 (Project Foundation) is **complete** including frontend initialization. Milestone 2 (Projects Module), Milestone 3 (Uploads Module), Milestone 4 (Static Analysis), Milestone 5 (Analysis Modules), and Milestone 6 (AI Module) are **complete**. Milestone 7 (Dashboard Frontend) is **complete** with M7C (Projects Frontend) and M7D (Project Workspace) implemented. Milestone 8 (Upload & Analysis Frontend) is **complete** with M8A (Upload Management) and M8B (Upload Processing) implemented. Milestone 9 (Analysis Overview Dashboard) is **complete** with M10A full dashboard implemented. Milestone 10 (Detailed Report & AI Insights) is **complete** with M10B Analysis Data Explorer and M10C AI Insights (moved to M11). Milestone 11 (Reports & Documentation Frontend) is **in progress** with B12 Backend Reports Foundation complete and AI Workspace Frontend complete. Backend: 586 tests passing, zero failures.
 
 The frontend is a React 19 + TypeScript + Vite + TailwindCSS application with React Router 7 for routing and TanStack Query for data fetching. It implements full CRUD project management, multi-file upload with drag-and-drop, real-time upload processing status (5s polling with auto-stop), an analysis overview dashboard with summary metrics, risk indicators, Recharts visualisations (file-language distribution, technology adoption, dependency ecosystem), an analysis data explorer with tabbed browsing of files/technologies/dependencies/warnings/metrics, and an AI workspace with on-demand generation of summaries, architecture analysis, technical debt assessment, modernization recommendations, and file/module explanations. All pages implement four-state UI handling (loading, empty, error, data). Routes include `/projects`, `/projects/:projectId`, `/projects/:projectId/uploads`, `/projects/:projectId/analysis/:analysisId/dashboard`, `/projects/:projectId/analysis/:analysisId/explorer`, and `/projects/:projectId/analysis/:analysisId/ai`.
 
@@ -1425,4 +1428,4 @@ The backend has a complete authentication system (register, login, JWT), Project
 
 The application is containerized via Docker Compose with PostgreSQL 16 Alpine, with four Alembic migrations applied (5 base tables + 6 M4 analysis tables + 4 covering indexes). Service-level timing with configurable threshold logging is in place. Architecture is formally documented in `docs/ARCHITECTURE.md` with implemented/planned separation. Engineering decisions are in `docs/DECISIONS.md`. The HTTP API is in `docs/API_CONTRACT.md` covering all 19 implemented endpoints.
 
-The next session should begin Milestone 11 (Reports & Documentation Frontend — PDF/HTML export, auto-generated docs, migration plans) or the Modernization Frontend.
+The next session should begin the Frontend Reports UI (Milestone 11 frontend) or the Modernization Frontend.
