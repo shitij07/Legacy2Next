@@ -1,5 +1,44 @@
 # Changelog
 
+## 2026-07-29 — Frontend Authentication Module (Login, Register, Route Guards, Session Persistence)
+
+### Added
+- `frontend/src/stores/authStore.ts` — Added `setToken`, `setUser`, `logout` actions with localStorage persistence; `isAuthenticated` reflects token presence; `isInitialized` tracks hydration completion
+- `frontend/src/services/auth.ts` — Auth API service with `login()`, `register()`, and `getCurrentUser()` using the shared ky client
+- `frontend/src/components/auth/ProtectedRoute.tsx` — Route guard that redirects unauthenticated users to `/login` (with loading spinner during hydration)
+- `frontend/src/components/auth/GuestRoute.tsx` — Route guard that redirects authenticated users away from auth pages to `/projects`
+- `frontend/src/components/auth/AuthInitializer.tsx` — On startup reads JWT from localStorage, restores `authStore`, validates via `GET /auth/me`, clears invalid tokens
+- `frontend/src/features/auth/pages/LoginPage.tsx` — Full login form with react-hook-form validation, loading state, error display, auto-redirect on success; calls `POST /auth/login`, stores JWT, fetches user via `GET /auth/me`
+- `frontend/src/features/auth/pages/RegisterPage.tsx` — Full registration form with name/email/password/confirm, auto-login on success; calls `POST /auth/register` then `POST /auth/login`
+- `frontend/src/components/layout/Header.tsx` — User dropdown menu with email display and logout button
+
+### Changed
+- `frontend/src/routes/auth.routes.tsx` — Wrapped in `GuestRoute` to prevent authenticated users from accessing login/register
+- `frontend/src/routes/projects.routes.tsx` — Wrapped in `ProtectedRoute` to require authentication
+- `frontend/src/routes/settings.routes.tsx` — Wrapped in `ProtectedRoute` to require authentication
+- `frontend/src/App.tsx` — Wrapped `RouterProvider` in `AuthInitializer` for session hydration on startup
+
+## 2026-07-29 — Centralized Authentication for All API Requests
+
+### Added
+- `frontend/src/services/client.ts` — Added `beforeRequest` hook to the ky HTTP client that reads the JWT token from `useAuthStore` and automatically attaches the `Authorization: Bearer <token>` header to every outgoing request
+
+### Changed
+- `frontend/src/services/upload.ts` — Removed redundant manual `Authorization` header logic from `uploadFile()` and `deleteUpload()` (now handled by the centralized client hook)
+
+### Fixed
+- All authenticated API calls across every service file (`projects.ts`, `analysis.ts`, `ai.ts`, reports API, comparison API, upload API) now automatically receive the JWT token via the centralized hook — previously only `uploadFile` and `deleteUpload` manually attached the header, causing 401 errors on all other endpoints
+
+## 2026-07-29 — Migration Chain Repair & Dependency Pins
+
+### Fixed
+- Missing `analysis_warnings` table: added migration `cd173a67ae96` inserted between `3f88aa8a120f` and `a1b2c3d4e5f6` to create the `analysis_warnings` table (id, analysis_id FK→analyses.id, detector_name, message, created_at) with indexes and FK constraint
+- `a1b2c3d4e5f6` (`add_m54_covering_indexes`) `down_revision` updated to `cd173a67ae96` — migration graph is now linear and complete
+- `b2c3d4e5f6a7` (`add_report_model_fields`): enum types `reportformat`/`reportstatus` now created before `add_column` usage; FK target columns corrected from `['analyses.id']`/`['users.id']` to `['id']`
+
+### Changed
+- `pyproject.toml`: pinned `litellm>=1.40.0,<1.92.0` — avoids Rust build requirement introduced in v1.92.0+ (maturin build backend). The application only uses `litellm.completion()`, `litellm.api_key`, and `litellm.exceptions.Timeout`, all stable since v1.40.0.
+
 ## 2026-07-28 — B13+F13 Analysis Comparison
 
 ### Added

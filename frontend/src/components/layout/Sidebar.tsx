@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { NavLink } from 'react-router-dom'
 import { FolderKanban, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -8,7 +9,7 @@ const navItems = [
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
 
-export function Sidebar() {
+export const Sidebar = memo(function Sidebar() {
   const sidebarOpen = useUiStore((s) => s.sidebarOpen)
   const toggleSidebar = useUiStore((s) => s.toggleSidebar)
 
@@ -57,4 +58,4 @@ export function Sidebar() {
       </aside>
     </>
   )
-}
+})

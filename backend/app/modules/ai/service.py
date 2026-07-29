@@ -30,10 +30,11 @@ def _validate_ownership(db: Session, user_id: int, analysis_id: int) -> Analysis
     analysis = analysis_repository.get_analysis_by_id(db, analysis_id)
     if analysis is None:
         raise NotFoundException("Analysis")
-    upload = db.query(Upload).filter(Upload.id == analysis.upload_id).first()
+    upload = analysis.upload
     if upload is None:
         raise NotFoundException("Analysis")
-    project = db.query(Project).filter(Project.id == upload.project_id).first()
+    from app.modules.projects import repository as projects_repository
+    project = projects_repository.get_project_by_id(db, upload.project_id)
     if project is None or project.user_id != user_id:
         raise NotFoundException("Analysis")
     return analysis

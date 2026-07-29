@@ -281,11 +281,6 @@ def generate_comparison(
 
     project = _get_owned_project(db, user_id, project_id)
 
-    from app.modules.projects import repository as projects_repository
-    project_a = projects_repository.get_project_by_id(db, project_id)
-    if project_a is None:
-        raise NotFoundException("Project")
-
     from app.modules.analysis import repository as analysis_repository
     analysis_a = analysis_repository.get_analysis_by_id(db, analysis_a_id)
     if analysis_a is None:

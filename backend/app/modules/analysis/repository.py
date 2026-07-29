@@ -23,7 +23,13 @@ from app.models.upload import Upload
 
 
 def get_analysis_by_id(db: Session, analysis_id: int) -> Analysis | None:
-    return db.query(Analysis).filter(Analysis.id == analysis_id).first()
+    from sqlalchemy.orm import joinedload
+    return (
+        db.query(Analysis)
+        .options(joinedload(Analysis.upload))
+        .filter(Analysis.id == analysis_id)
+        .first()
+    )
 
 
 def list_analyses_by_upload(db: Session, upload_id: int) -> list[Analysis]:

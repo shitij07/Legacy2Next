@@ -1,7 +1,7 @@
 """add_m54_covering_indexes
 
 Revision ID: a1b2c3d4e5f6
-Revises: 3f88aa8a120f
+Revises: cd173a67ae96
 Create Date: 2026-07-26 17:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 
 revision: str = 'a1b2c3d4e5f6'
-down_revision: Union[str, None] = '3f88aa8a120f'
+down_revision: Union[str, None] = 'cd173a67ae96'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

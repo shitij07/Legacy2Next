@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Generic, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
 T = TypeVar("T")
@@ -20,10 +20,10 @@ class ReportStatus(str, Enum):
 
 
 class ReportCreate(BaseModel):
-    project_id: int
-    analysis_id: int
+    project_id: int = Field(..., ge=1)
+    analysis_id: int = Field(..., ge=1)
     format: ReportFormat = ReportFormat.MARKDOWN
-    title: str = "Analysis Report"
+    title: str = Field(default="Analysis Report", min_length=1, max_length=255)
 
 
 class ReportResponse(BaseModel):

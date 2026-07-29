@@ -2,7 +2,7 @@ import math
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from app.models.report import Report, ReportFormat, ReportStatus
 
@@ -86,5 +86,10 @@ def list_reports(
         query = query.order_by(sort_col.asc())
 
     total = query.count()
-    items = query.offset((page - 1) * size).limit(size).all()
+    items = (
+        query.options(load_only(Report.id, Report.project_id, Report.analysis_id, Report.title, Report.format, Report.status, Report.created_at))
+        .offset((page - 1) * size)
+        .limit(size)
+        .all()
+    )
     return Page(items=items, total=total, page=page, size=size)

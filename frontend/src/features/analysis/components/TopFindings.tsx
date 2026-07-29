@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { AlertTriangle, ArrowRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { DashboardWarnings } from '@/lib/types'
@@ -6,7 +7,7 @@ interface TopFindingsProps {
   warnings: DashboardWarnings
 }
 
-export function TopFindings({ warnings }: TopFindingsProps) {
+export const TopFindings = memo(function TopFindings({ warnings }: TopFindingsProps) {
   const topDetectors = [...warnings.detector_breakdown]
     .sort((a, b) => b.count - a.count)
     .slice(0, 5)
@@ -51,4 +52,4 @@ export function TopFindings({ warnings }: TopFindingsProps) {
       </CardContent>
     </Card>
   )
-}
+})

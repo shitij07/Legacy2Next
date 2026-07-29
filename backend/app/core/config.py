@@ -1,3 +1,4 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -58,6 +59,14 @@ class Settings(BaseSettings):
     AI_TEMPERATURE: float = 0.3
     AI_MAX_TOKENS: int = 2048
     AI_TIMEOUT_SECONDS: int = 60
+
+    @model_validator(mode="after")
+    def validate_secret_key(self) -> "Settings":
+        if not self.DEBUG and self.SECRET_KEY == "change-me":
+            raise ValueError(
+                "SECRET_KEY must be changed from the default value in production"
+            )
+        return self
 
     class Config:
         env_file = ".env"

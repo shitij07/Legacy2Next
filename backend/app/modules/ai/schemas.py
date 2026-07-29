@@ -1,8 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ModuleExplanationRequest(BaseModel):
-    module_path: str
+    module_path: str = Field(..., min_length=1, max_length=2048)
 
 
 class GenerationResponse(BaseModel):

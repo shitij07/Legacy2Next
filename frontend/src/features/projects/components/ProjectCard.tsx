@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { FileCode, Trash2 } from 'lucide-react'
 import type { Project } from '@/lib/types'
 import { Card } from '@/components/ui/card'
@@ -9,7 +10,7 @@ interface ProjectCardProps {
   onDelete: (project: Project) => void
 }
 
-export function ProjectCard({ project, onDelete }: ProjectCardProps) {
+export const ProjectCard = memo(function ProjectCard({ project, onDelete }: ProjectCardProps) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
     return date.toLocaleDateString('en-US', {
@@ -61,4 +62,4 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
       </div>
     </Card>
   )
-}
+})

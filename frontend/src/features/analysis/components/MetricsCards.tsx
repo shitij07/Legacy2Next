@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { DashboardFiles, DashboardTechnologies, DashboardDependencies, DashboardMetrics } from '@/lib/types'
 
 interface MetricsCardsProps {
@@ -7,7 +8,7 @@ interface MetricsCardsProps {
   metrics: DashboardMetrics
 }
 
-export function MetricsCards({ files, technologies, dependencies, metrics }: MetricsCardsProps) {
+export const MetricsCards = memo(function MetricsCards({ files, technologies, dependencies, metrics }: MetricsCardsProps) {
   const cards = [
     { label: 'Total Files', value: files.total_files },
     { label: 'Languages', value: metrics.language_count ?? technologies.category_distribution.length },
@@ -25,4 +26,4 @@ export function MetricsCards({ files, technologies, dependencies, metrics }: Met
       ))}
     </div>
   )
-}
+})

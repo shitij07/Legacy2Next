@@ -2,7 +2,7 @@ import math
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from app.models.comparison import Comparison
 
@@ -49,5 +49,10 @@ def list_comparisons(
     query = query.order_by(Comparison.created_at.desc())
 
     total = query.count()
-    items = query.offset((page - 1) * size).limit(size).all()
+    items = (
+        query.options(load_only(Comparison.id, Comparison.project_id, Comparison.analysis_a_id, Comparison.analysis_b_id, Comparison.created_at))
+        .offset((page - 1) * size)
+        .limit(size)
+        .all()
+    )
     return Page(items=items, total=total, page=page, size=size)

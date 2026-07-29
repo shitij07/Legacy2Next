@@ -1,16 +1,16 @@
 from datetime import datetime
 from typing import Generic, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
 T = TypeVar("T")
 
 
 class ComparisonCreate(BaseModel):
-    project_id: int
-    analysis_a_id: int
-    analysis_b_id: int
+    project_id: int = Field(..., ge=1)
+    analysis_a_id: int = Field(..., ge=1)
+    analysis_b_id: int = Field(..., ge=1)
 
 
 class MetricDiff(BaseModel):

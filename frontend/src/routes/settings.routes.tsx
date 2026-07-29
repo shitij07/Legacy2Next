@@ -1,9 +1,19 @@
+import { lazy } from 'react'
 import { DashboardLayout } from '@/layouts/DashboardLayout'
-import { SettingsPage } from '@/features/settings/pages/SettingsPage'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+
+const SettingsPage = lazy(() =>
+  import('@/features/settings/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+)
 
 export const settingsRoutes = {
-  element: <DashboardLayout />,
+  element: <ProtectedRoute />,
   children: [
-    { path: 'settings', element: <SettingsPage /> },
+    {
+      element: <DashboardLayout />,
+      children: [
+        { path: 'settings', element: <SettingsPage /> },
+      ],
+    },
   ],
 }

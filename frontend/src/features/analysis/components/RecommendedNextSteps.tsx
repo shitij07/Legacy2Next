@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Upload, BarChart3, FileText, Brain } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -24,7 +25,7 @@ const steps = [
   },
 ]
 
-export function RecommendedNextSteps() {
+export const RecommendedNextSteps = memo(function RecommendedNextSteps() {
   return (
     <Card>
       <CardHeader>
@@ -50,4 +51,4 @@ export function RecommendedNextSteps() {
       </CardContent>
     </Card>
   )
-}
+})

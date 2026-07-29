@@ -1,5 +1,4 @@
 import { client } from './client'
-import { useAuthStore } from '@/stores/authStore'
 import type { Upload, PaginatedResponse } from '@/lib/types'
 
 export async function getUploads(
@@ -23,7 +22,6 @@ export async function uploadFile(
   file: File,
   signal?: AbortSignal,
 ): Promise<Upload[]> {
-  const token = useAuthStore.getState().token
   const formData = new FormData()
   formData.append('files', file)
 
@@ -31,17 +29,13 @@ export async function uploadFile(
     .post(`projects/${projectId}/uploads`, {
       body: formData,
       signal,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
       timeout: 600_000,
     })
     .json()
 }
 
 export async function deleteUpload(id: number): Promise<void> {
-  const token = useAuthStore.getState().token
-  await client.delete(`uploads/${id}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  })
+  await client.delete(`uploads/${id}`)
 }
 
 export const UPLOAD_CONSTRAINTS = {

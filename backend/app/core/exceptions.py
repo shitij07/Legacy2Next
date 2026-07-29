@@ -37,7 +37,7 @@ class FileValidationException(AppException):
 
 class QuotaExceededException(AppException):
     def __init__(self, message: str):
-        super().__init__(code="PROJECT_STORAGE_LIMIT", message=message, status_code=400)
+        super().__init__(code="PROJECT_STORAGE_LIMIT", message=message, status_code=413)
 
 
 class StorageException(AppException):
